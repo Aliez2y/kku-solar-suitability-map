@@ -20,9 +20,9 @@ const MapContent = () => {
 
     // Usable_SR color function (red = high, orange = medium, yellow = low)
     function getUsableSRColor(val) {
-        if (val > 170.26) return '#EF4444'; // red (High)
-        if (val > 63.03) return '#F59E42'; // orange (Medium)
-        return '#FDE047'; // yellow (Low)
+        if (val > 170.26) return '#EF4444'; // red-500 (High)
+        if (val > 63.03) return '#F97316'; // orange-500 (Medium)
+        return '#FACC15'; // yellow-400 (Low)
     }
 
     // Get filter category for a given SR value
@@ -45,9 +45,9 @@ const MapContent = () => {
     // Suitability color palette - clear distinct colors
     function getSuitabilityColor(elec) {
         const cat = getSuitabilityCategory(elec);
-        if (cat === 'high') return '#10B981'; // emerald-500 - เขียวสด
-        if (cat === 'medium') return '#FBBF24'; // amber-400 - เหลืองสด
-        return '#EF4444'; // red-500 - แดงสด
+        if (cat === 'high') return '#10B981'; // emerald-500
+        if (cat === 'medium') return '#F59E0B'; // amber-500
+        return '#EF4444'; // red-500
     }
 
     // Handle legend item click
@@ -89,7 +89,7 @@ const MapContent = () => {
 
     useEffect(() => {
         // Load GeoJSON from public folder
-        fetch('/Suitable_SolarKKU.geojson')
+        fetch('/Solar_Buildingkk.geojson')
             .then((res) => res.json())
             .then((data) => setGeoData(data));
     }, []);
@@ -104,9 +104,9 @@ const MapContent = () => {
 
         geoJsonRef.current.eachLayer(layer => {
             if (!layer.feature || !layer.setStyle) return;
-            const sr = layer.feature.properties.USABLE_SR;
+            const sr = layer.feature.properties.USABLE_SR || layer.feature.properties.Usable_SR;
             const category = getSRCategory(sr);
-            const elec = layer.feature.properties.ELEC_PROD;
+            const elec = layer.feature.properties.ELEC_PROD || layer.feature.properties.Elec_Prod;
             const suitCat = getSuitabilityCategory(elec);
             const isSelected = selected && layer.feature.properties.B_ID === selected.properties.B_ID;
 
@@ -222,7 +222,7 @@ const MapContent = () => {
                 `}</style>
                 {/* Side Panel with enhanced design and animations */}
                 {selected && (
-                    <div className="fixed left-2 sm:left-4 top-20 sm:top-24 w-[calc(100vw-1rem)] sm:w-[340px] md:w-[360px] lg:w-[380px] max-w-[95vw] sm:max-w-[90vw] bg-gradient-to-br from-white to-blue-50 shadow-2xl z-[1100] rounded-xl sm:rounded-2xl overflow-hidden border border-blue-100 animate-in slide-in-from-left duration-300 max-h-[calc(100vh-6rem)] overflow-y-auto"
+                    <div className="fixed left-2 sm:left-4 top-20 sm:top-24 w-[calc(100vw-1rem)] sm:w-[320px] md:w-[340px] max-w-[95vw] sm:max-w-[90vw] bg-white/90 backdrop-blur-md shadow-2xl z-[1100] rounded-xl overflow-hidden border border-blue-100/50 animate-in slide-in-from-left duration-300 max-h-[calc(100vh-6rem)] overflow-y-auto"
                          style={{ fontFamily: 'Noto Sans Thai, sans-serif' }}>
                         {/* Header */}
                         <div className="bg-gradient-to-r from-blue-600 to-blue-500 px-4 sm:px-5 py-3 sm:py-4 flex justify-between items-center sticky top-0 z-10">
@@ -243,82 +243,116 @@ const MapContent = () => {
                         </div>
                         
                         {/* Content */}
-                        <div className="p-3 sm:p-4 md:p-5 space-y-3 sm:space-y-4">
+                        <div className="p-3 sm:p-4 space-y-2.5">
                             {/* Building ID */}
-                            <div className="bg-white rounded-lg sm:rounded-xl p-3 sm:p-4 shadow-sm border border-gray-100">
-                                <div className="flex items-center gap-2 mb-2">
-                                    <div className="w-7 h-7 sm:w-8 sm:h-8 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                                        <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                            <div className="bg-white/80 rounded-lg p-3 shadow-sm border border-gray-100/50">
+                                <div className="flex items-center gap-2 mb-1.5">
+                                    <div className="w-6 h-6 bg-blue-100/80 rounded flex items-center justify-center flex-shrink-0">
+                                        <svg className="w-3.5 h-3.5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
                                             <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd"/>
                                         </svg>
                                     </div>
-                                    <span className="text-xs sm:text-sm font-semibold text-gray-500">รหัสอาคาร</span>
+                                    <span className="text-xs font-semibold text-gray-500">รหัสอาคาร</span>
                                 </div>
-                                <p className="text-xl sm:text-2xl font-bold text-blue-600">{selected.properties.B_ID}</p>
+                                <p className="text-lg sm:text-xl font-bold text-blue-700">{selected.properties.B_ID}</p>
                             </div>
 
                             {/* Details Grid */}
-                            <div className="space-y-2 sm:space-y-3">
+                            <div className="space-y-2">
                                 {/* Area */}
-                                <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+                                <div className="bg-white/80 rounded-lg p-3 shadow-sm border border-gray-100/50">
                                     <div className="flex items-start justify-between">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                                                <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <div className="flex items-center gap-2.5">
+                                            <div className="w-8 h-8 bg-green-100/80 rounded flex items-center justify-center flex-shrink-0">
+                                                <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 16a1 1 0 011-1h4a1 1 0 011 1v3a1 1 0 01-1 1H5a1 1 0 01-1-1v-3zM14 16a1 1 0 011-1h4a1 1 0 011 1v3a1 1 0 01-1 1h-4a1 1 0 01-1-1v-3z"/>
                                                 </svg>
                                             </div>
                                             <div>
-                                                <p className="text-xs text-gray-500 font-medium">พื้นที่หลังคา</p>
-                                                <p className="text-lg font-bold text-gray-800">{selected.properties.AREA} <span className="text-sm font-normal text-gray-500">ตร.ม.</span></p>
+                                                <p className="text-[10px] text-gray-500 font-medium">พื้นที่หลังคา</p>
+                                                <p className="text-base font-bold text-gray-800">{selected.properties.AREA} <span className="text-xs font-normal text-gray-500">ตร.ม.</span></p>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
 
                                 {/* Solar Radiation */}
-                                <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+                                <div className="bg-white/80 rounded-lg p-3 shadow-sm border border-gray-100/50">
                                     <div className="flex items-start justify-between">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                                                <svg className="w-5 h-5 text-yellow-600" fill="currentColor" viewBox="0 0 20 20">
+                                        <div className="flex items-center gap-2.5">
+                                            <div className="w-8 h-8 bg-yellow-100/80 rounded flex items-center justify-center flex-shrink-0">
+                                                <svg className="w-4 h-4 text-yellow-600" fill="currentColor" viewBox="0 0 20 20">
                                                     <path fillRule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clipRule="evenodd"/>
                                                 </svg>
                                             </div>
                                             <div>
-                                                <p className="text-xs text-gray-500 font-medium">รังสีดวงอาทิตย์</p>
-                                                <p className="text-lg font-bold text-gray-800">{selected.properties.USABLE_SR} <span className="text-sm font-normal text-gray-500">MWh/yr</span></p>
+                                                <p className="text-[10px] text-gray-500 font-medium">รังสีดวงอาทิตย์</p>
+                                                <p className="text-base font-bold text-gray-800">
+                                                    {(selected.properties.USABLE_SR || selected.properties.Usable_SR || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })} 
+                                                    <span className="text-xs font-normal text-gray-500 ml-1">MWh/yr</span>
+                                                </p>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
 
                                 {/* Electricity Production */}
-                                <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+                                <div className="bg-white/80 rounded-lg p-3 shadow-sm border border-gray-100/50">
                                     <div className="flex items-start justify-between">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                                                <svg className="w-5 h-5 text-orange-600" fill="currentColor" viewBox="0 0 20 20">
+                                        <div className="flex items-center gap-2.5">
+                                            <div className="w-8 h-8 bg-orange-100/80 rounded flex items-center justify-center flex-shrink-0">
+                                                <svg className="w-4 h-4 text-orange-600" fill="currentColor" viewBox="0 0 20 20">
                                                     <path d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z"/>
                                                 </svg>
                                             </div>
                                             <div>
-                                                <p className="text-xs text-gray-500 font-medium">การผลิตไฟฟ้า</p>
-                                                <p className="text-lg font-bold text-gray-800">{selected.properties.ELEC_PROD} <span className="text-sm font-normal text-gray-500">MWh/yr</span></p>
+                                                <p className="text-[10px] text-gray-500 font-medium">การผลิตไฟฟ้า</p>
+                                                <p className="text-base font-bold text-gray-800">
+                                                    {(selected.properties.ELEC_PROD || selected.properties.Elec_Prod || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })} 
+                                                    <span className="text-xs font-normal text-gray-500 ml-1">MWh/yr</span>
+                                                </p>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
+
+                                {/* Electricity Cost Savings */}
+                                <div className="bg-white/80 rounded-lg p-3 shadow-sm border border-gray-100/50">
+                                    <div className="flex items-start justify-between">
+                                        <div className="flex items-center gap-2.5">
+                                            <div className="w-8 h-8 bg-indigo-100/80 rounded flex items-center justify-center flex-shrink-0">
+                                                <svg className="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                </svg>
+                                            </div>
+                                            <div>
+                                                <p className="text-[10px] text-gray-500 font-medium">ค่าไฟฟ้าที่ประหยัดได้</p>
+                                                <p className="text-base font-bold text-gray-800">
+                                                    {(selected.properties.ELEC_COST || selected.properties.Elec_Cost || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })} 
+                                                    <span className="text-xs font-normal text-gray-500 ml-1">บาท/ปี</span>
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                            </div>
+
+                            {/* Disclaimer */}
+                            <div className="mt-3 px-1">
+                                <p className="text-[10px] sm:text-xs text-gray-400 italic">
+                                    *หมายเหตุ: ประเมินจากการสมมติว่าอาคารเป็นผู้ใช้ไฟประเภทที่ 1 (บ้านอยู่อาศัย) และผลิตเพื่อใช้เองทั้งหมด
+                                </p>
                             </div>
                         </div>
                     </div>
                 )}
-                {/* Legend Card with toggle between SR and Suitability - Enhanced Design */}
-                <div className="absolute bottom-4 sm:bottom-6 right-2 sm:right-4 md:right-6 z-[1001] bg-gradient-to-br from-white via-white to-gray-50/80 backdrop-blur-md rounded-2xl shadow-2xl border border-white/60 min-w-[280px] md:min-w-[320px] max-w-[calc(100vw-1rem)] sm:max-w-none overflow-hidden">
+                {/* Legend Card with toggle between SR and Suitability - Less Obtrusive */}
+                <div className="absolute bottom-4 sm:bottom-6 right-2 sm:right-4 z-[1001] bg-white/85 backdrop-blur-md rounded-xl shadow-lg border border-white/40 min-w-[240px] md:min-w-[260px] max-w-[calc(100vw-1rem)] sm:max-w-none overflow-hidden origin-bottom-right transition-transform sm:scale-100 scale-95">
                     {/* Decorative gradient bar at top */}
                     <div className={`h-1 transition-all duration-500 ${legendMode === 'sr' ? 'bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500' : 'bg-gradient-to-r from-emerald-500 via-amber-400 to-red-500'}`}></div>
                     
-                    <div className="px-3 sm:px-4 md:px-5 py-3 sm:py-4">
+                    <div className="px-3 md:px-4 py-2 sm:py-3">
                         {/* Toggle header with icons */}
                         <div className="flex items-center justify-between gap-2 mb-3 sm:mb-4">
                             <div className="inline-flex p-1 bg-gradient-to-br from-gray-100 to-gray-50 rounded-xl shadow-inner">
@@ -559,8 +593,8 @@ const MapContent = () => {
                             data={geoData}
                             style={feature => {
                                 // Initial style; will be overridden by useEffect on state changes
-                                const sr = feature.properties.USABLE_SR;
-                                const elec = feature.properties.ELEC_PROD;
+                                const sr = feature.properties.USABLE_SR || feature.properties.Usable_SR;
+                                const elec = feature.properties.ELEC_PROD || feature.properties.Elec_Prod;
                                 const strokeColor = legendMode === 'sr' ? getUsableSRColor(sr) : getSuitabilityColor(elec);
                                 return {
                                     color: strokeColor,
@@ -573,9 +607,9 @@ const MapContent = () => {
                                 layer.on({
                                     click: (e) => {
                                         // Check only the current legend's filter and if this building matches it
-                                        const sr = feature.properties.USABLE_SR;
+                                        const sr = feature.properties.USABLE_SR || feature.properties.Usable_SR;
                                         const category = getSRCategory(sr);
-                                        const elec = feature.properties.ELEC_PROD;
+                                        const elec = feature.properties.ELEC_PROD || feature.properties.Elec_Prod;
                                         const suitCat = getSuitabilityCategory(elec);
                                         const isSRMode = legendMode === 'sr';
                                         if ((isSRMode && activeFilter && category !== activeFilter) || (!isSRMode && activeSuitability && suitCat !== activeSuitability)) {

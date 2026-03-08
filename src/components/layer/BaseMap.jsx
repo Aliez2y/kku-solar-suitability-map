@@ -156,14 +156,14 @@ const BaseMap = () => {
             `}</style>
             
             <LayersControl position="topright">
-                <LayersControl.BaseLayer checked name="OpenStreetMap">
+                <LayersControl.BaseLayer name="OpenStreetMap">
                     <TileLayer
                         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
                         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                     />
                 </LayersControl.BaseLayer>
 
-                <LayersControl.BaseLayer name="โหมดมืด (Dark Mode)">
+                <LayersControl.BaseLayer checked name="โหมดมืด (Dark Mode)">
                     <TileLayer
                         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
                         url="https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png"

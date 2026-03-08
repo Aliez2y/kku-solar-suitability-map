@@ -79,9 +79,9 @@ function Home() {
         <section id="home" className="relative min-h-[78vh] flex items-center justify-center pt-28 pb-16 px-4 sm:px-6 lg:px-8">
           <div className="relative z-10 max-w-5xl text-center">
 
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold leading-tight text-white">
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold leading-tight text-white tracking-tight">
               ระบบประเมินศักยภาพพลังงานแสงอาทิตย์บนหลังคาอาคาร
-              <span className="block mt-2 text-violet-200">มหาวิทยาลัยขอนแก่น (SolarSuit-KKU)</span>
+              <span className="block mt-2 text-blue-300 font-medium">เทศบาลนครขอนแก่น (Khon Kaen Solar Map)</span>
             </h1>
 
             <p className="mt-6 text-base sm:text-lg text-slate-200 leading-relaxed max-w-4xl mx-auto">
@@ -91,10 +91,10 @@ function Home() {
 
             <button
               type="button"
-              className="mt-10 inline-flex items-center gap-3 rounded-full bg-violet-600 hover:bg-violet-500 px-8 py-3.5 text-base font-semibold text-white transition-colors shadow-xl shadow-violet-950/60"
+              className="mt-10 inline-flex items-center gap-3 rounded-lg bg-blue-700 hover:bg-blue-600 px-8 py-3.5 text-base font-semibold text-white transition-all shadow-lg shadow-blue-900/60 ring-1 ring-blue-500/50"
               onClick={() => navigate('/map')}
             >
-              เข้าสู่ระบบแผนที่
+              เข้าสู่ระบบแผนที่ภูมิสารสนเทศ
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
               </svg>
@@ -108,9 +108,9 @@ function Home() {
               {featureItems.map((feature) => (
                 <article
                   key={feature.title}
-                  className="rounded-2xl border border-white/10 bg-slate-950/85 p-6 hover:border-violet-400/50 transition-colors"
+                  className="rounded-xl border border-slate-700 bg-slate-900/80 p-6 hover:bg-slate-800/90 hover:border-blue-500/50 transition-all shadow-md shadow-black/20"
                 >
-                  <div className="w-12 h-12 rounded-xl bg-slate-800 border border-white/10 flex items-center justify-center mb-4">
+                  <div className="w-12 h-12 rounded-lg bg-blue-900/50 border border-blue-500/30 flex items-center justify-center mb-4 text-blue-300">
                     {feature.icon}
                   </div>
                   <h3 className="text-lg font-semibold text-white">{feature.title}</h3>
@@ -122,8 +122,8 @@ function Home() {
         </section>
       </main>
 
-      <footer id="about" className="relative z-10 border-t border-white/10 bg-slate-950/80 py-8 text-center text-sm text-slate-400">
-        มหาวิทยาลัยขอนแก่น • Solar Rooftop Suitability Assessment System
+      <footer id="about" className="relative z-10 border-t border-slate-800 bg-slate-950 py-8 text-center text-sm text-slate-400 font-medium tracking-wide">
+        สงวนลิขสิทธิ์ © 2024 • ระบบประเมินศักยภาพพลังงานแสงอาทิตย์บนหลังคาอาคาร เทศบาลนครขอนแก่น
       </footer>
     </div>
   );

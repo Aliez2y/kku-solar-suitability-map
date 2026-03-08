@@ -8,7 +8,7 @@ function Navbar() {
   const navItems = [
     { name: 'หน้าแรก', to: '/', isRoute: true },
     { name: 'วิธีการศึกษา', to: '/method', isRoute: true },
-    { name: 'สถิติ', to: '/#stats', isRoute: false },
+    { name: 'สถิติ', to: '/stats', isRoute: true },
     { name: 'เกี่ยวกับเรา', to: '/about', isRoute: true }
   ];
 
@@ -44,16 +44,18 @@ function Navbar() {
             })}
           </div>
 
-          <button
-            type="button"
-            className="inline-flex items-center gap-2 rounded-full bg-violet-600 hover:bg-violet-500 px-5 py-2.5 text-sm font-semibold text-white transition-colors shadow-lg shadow-violet-950/60"
-            onClick={() => navigate('/map')}
-          >
-            {isHomePage ? 'เปิดใช้งานแผนที่' : 'เข้าสู่แผนที่'}
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-            </svg>
-          </button>
+          {!(isHomePage || location.pathname === '/map') && (
+            <button
+              type="button"
+              className="inline-flex items-center gap-2 rounded-lg bg-blue-700 hover:bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors shadow-md shadow-blue-900/40"
+              onClick={() => navigate('/map')}
+            >
+              สู่หน้าแผนที่
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+              </svg>
+            </button>
+          )}
         </div>
       </div>
     </nav>

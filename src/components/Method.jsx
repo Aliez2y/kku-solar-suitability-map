@@ -48,9 +48,9 @@ function Method() {
       <Navbar />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 pb-16 space-y-8 sm:space-y-10">
-        <section className="rounded-2xl border border-white/10 bg-gradient-to-br from-slate-900 to-slate-950 p-6 sm:p-8">
-          <p className="text-violet-300 text-sm font-medium">บทที่ 3 • ขั้นตอนการดำเนินงานวิจัย</p>
-          <h1 className="mt-2 text-2xl sm:text-3xl lg:text-4xl font-bold leading-tight text-white">
+        <section className="rounded-2xl border border-slate-700 bg-gradient-to-br from-slate-900 to-slate-950 p-6 sm:p-8 shadow-sm">
+          <p className="text-blue-300 text-sm font-medium">บทที่ 3 • ขั้นตอนการดำเนินงานวิจัย</p>
+          <h1 className="mt-2 text-2xl sm:text-3xl lg:text-4xl font-bold leading-tight text-white tracking-tight">
             การวิเคราะห์ข้อมูลเชิงพื้นที่เพื่อประเมินศักยภาพพลังงานแสงอาทิตย์บนหลังคาอาคาร
           </h1>
           <p className="mt-4 text-slate-300 leading-relaxed max-w-4xl">
@@ -64,8 +64,8 @@ function Method() {
           <h2 className="text-xl sm:text-2xl font-semibold text-white">ชุดข้อมูลที่ใช้ในการวิเคราะห์</h2>
           <div className="mt-5 grid grid-cols-1 md:grid-cols-3 gap-4">
             {inputData.map((item) => (
-              <article key={item.title} className="rounded-xl border border-white/10 bg-slate-950/70 p-4">
-                <h3 className="font-semibold text-violet-200">{item.title}</h3>
+              <article key={item.title} className="rounded-xl border border-slate-700 bg-slate-950/70 p-4 hover:border-blue-500/30 transition-colors shadow-sm">
+                <h3 className="font-semibold text-blue-200">{item.title}</h3>
                 <p className="mt-2 text-sm text-slate-300 leading-relaxed">{item.detail}</p>
               </article>
             ))}
@@ -76,7 +76,7 @@ function Method() {
           <h2 className="text-xl sm:text-2xl font-semibold text-white">ขั้นตอนการวิเคราะห์ข้อมูล (Detailed Workflow)</h2>
           <div className="mt-5 grid grid-cols-1 md:grid-cols-2 gap-4">
             {analysisSteps.map((step) => (
-              <article key={step.title} className="rounded-xl border border-white/10 bg-slate-950/70 p-4">
+              <article key={step.title} className="rounded-xl border border-slate-700 bg-slate-950/70 p-4 hover:border-blue-500/30 transition-colors shadow-sm">
                 <h3 className="font-semibold text-white">{step.title}</h3>
                 <p className="mt-2 text-sm text-slate-300 leading-relaxed">{step.body}</p>
               </article>
@@ -98,13 +98,13 @@ function Method() {
           <article className="rounded-2xl border border-white/10 bg-slate-900/70 p-6 sm:p-8">
             <h2 className="text-xl font-semibold text-white">การคำนวณพลังงาน</h2>
             <div className="mt-4 space-y-4 text-slate-300">
-              <div className="rounded-xl border border-white/10 bg-slate-950/70 p-4">
-                <p className="text-sm font-semibold text-violet-200">สมการพลังงานแสงอาทิตย์รวมบนหลังคา</p>
+              <div className="rounded-xl border border-slate-700 bg-slate-950/70 p-4 shadow-sm">
+                <p className="text-sm font-semibold text-blue-200">สมการพลังงานแสงอาทิตย์รวมบนหลังคา</p>
                 <p className="mt-2 text-sm sm:text-base">S = (A × H) / 1000</p>
                 <p className="mt-2 text-xs sm:text-sm">โดย A = พื้นที่หลังคา (m²), H = รังสีเฉลี่ยรายปี (kWh/m²/yr), S = พลังงานรวม (MWh/yr)</p>
               </div>
-              <div className="rounded-xl border border-white/10 bg-slate-950/70 p-4">
-                <p className="text-sm font-semibold text-violet-200">สมการพลังงานไฟฟ้าที่ผลิตได้</p>
+              <div className="rounded-xl border border-slate-700 bg-slate-950/70 p-4 shadow-sm">
+                <p className="text-sm font-semibold text-blue-200">สมการพลังงานไฟฟ้าที่ผลิตได้</p>
                 <p className="mt-2 text-sm sm:text-base">E = S × r × PR</p>
                 <p className="mt-2 text-xs sm:text-sm">โดย r = ประสิทธิภาพแผง (ช่วง 15–20%), PR = ประสิทธิภาพระบบ (ใช้ 0.86), E = ไฟฟ้าที่ผลิตได้ (MWh/yr)</p>
               </div>
@@ -112,7 +112,7 @@ function Method() {
           </article>
         </section>
 
-        <section className="rounded-2xl border border-violet-400/30 bg-violet-950/20 p-6 sm:p-8">
+        <section className="rounded-2xl border border-blue-500/30 bg-blue-950/20 p-6 sm:p-8 shadow-sm">
           <h2 className="text-xl sm:text-2xl font-semibold text-white">สรุปเชิงระบบ</h2>
           <p className="mt-3 text-slate-200 leading-relaxed">
             ผลการวิเคราะห์จากบทที่ 3 ชี้ให้เห็นว่าการผสานข้อมูล DSM + Building Footprints + GTI ภายใต้กระบวนการ GIS
