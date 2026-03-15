@@ -1,7 +1,5 @@
-
 import React, { useEffect, useState, useRef } from 'react';
-import { MapContainer, GeoJSON, ZoomControl } from 'react-leaflet';
-import BaseMap from './layer/BaseMap';
+import { MapContainer, GeoJSON, ZoomControl, LayersControl, TileLayer } from 'react-leaflet';
 import Navbar from './Navbar';
 import L from 'leaflet';
 
@@ -89,7 +87,7 @@ const MapContent = () => {
 
     useEffect(() => {
         // Load GeoJSON from public folder
-        fetch('/Solar_Buildingkk.geojson')
+        fetch('/SolarNKK_Bjson.geojson')
             .then((res) => res.json())
             .then((data) => setGeoData(data));
     }, []);
@@ -144,10 +142,10 @@ const MapContent = () => {
             
             if (isSelected) {
                 layer.setStyle({
-                    color: '#0EA5E9', // bright cyan-blue border
-                    weight: 4,
-                    fillOpacity: 0.6,
-                    fillColor: '#06B6D4', // bright cyan fill
+                    color: '#0EA5E9', // still keep the selection highlight border
+                    weight: 3,
+                    fillOpacity: 1,
+                    fillColor: '#06B6D4',
                     opacity: 1,
                     dashArray: null
                 });
@@ -157,8 +155,9 @@ const MapContent = () => {
                 const fillColor = strokeColor;
                 layer.setStyle({
                     color: strokeColor,
-                    weight: 2,
-                    fillOpacity: 0.18,
+                    stroke: false,
+                    weight: 0,
+                    fillOpacity: 1,
                     fillColor: fillColor,
                     opacity: 1
                 });
@@ -218,6 +217,41 @@ const MapContent = () => {
                         top: 50%;
                         left: 50%;
                         transform: translate(-50%, -50%);
+                    }
+                    /* Category Headers */
+                    .leaflet-control-layers-base::before {
+                        content: "แผนที่ฐาน (Base Maps)";
+                        display: block;
+                        font-weight: bold;
+                        font-size: 13px;
+                        color: #1e3a8a;
+                        margin-bottom: 8px;
+                        padding-bottom: 4px;
+                        border-bottom: 1px solid #e5e7eb;
+                    }
+                    .leaflet-control-layers-overlays::before {
+                        content: "ชั้นข้อมูล (Overlays)";
+                        display: block;
+                        font-weight: bold;
+                        font-size: 13px;
+                        color: #1e3a8a;
+                        margin-bottom: 8px;
+                        margin-top: 12px;
+                        padding-bottom: 4px;
+                        border-bottom: 1px solid #e5e7eb;
+                    }
+                    /* Styling the inputs to look like nicely rounded checkboxes/radios */
+                    .leaflet-control-layers-expanded {
+                        padding: 12px 16px !important;
+                        border-radius: 12px !important;
+                    }
+                    .leaflet-control-layers label {
+                        display: flex !important;
+                        align-items: center !important;
+                        font-size: 14px !important;
+                        margin-bottom: 6px !important;
+                        color: #374151 !important;
+                        cursor: pointer !important;
                     }
                 `}</style>
                 {/* Side Panel with enhanced design and animations */}
@@ -584,66 +618,102 @@ const MapContent = () => {
                     zoomControl={false}
                     whenCreated={mapInstance => (mapRef.current = mapInstance)}
                 >
-                    <BaseMap />
+                    <LayersControl position="topright">
+                        <LayersControl.BaseLayer name="OpenStreetMap">
+                            <TileLayer
+                                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                            />
+                        </LayersControl.BaseLayer>
+
+                        <LayersControl.BaseLayer checked name="โหมดมืด (Dark Mode)">
+                            <TileLayer
+                                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                                url="https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png"
+                            />
+                        </LayersControl.BaseLayer>
+                        
+                        <LayersControl.BaseLayer name="ภาพดาวเทียม (Satellite)">
+                            <TileLayer
+                                attribution='Tiles &copy; Esri'
+                                url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+                            />
+                        </LayersControl.BaseLayer>
+
+                        {/* Optional Overlays */}
+                        <LayersControl.Overlay name="รังสีดวงอาทิตย์ (Tile Layer)">
+                            <TileLayer
+                                url="/tiles/{z}/{x}/{y}.png"
+                                maxNativeZoom={16}
+                                maxZoom={20}
+                                opacity={0.8}
+                            />
+                        </LayersControl.Overlay>
+
+                        {/* GeoJSON Overlay */}
+                        {geoData && (
+                            <LayersControl.Overlay checked name="อาคารเทศบาล (GeoJSON)">
+                                <GeoJSON
+                                    ref={geoJsonRef}
+                                    data={geoData}
+                                    style={feature => {
+                                        // Initial style; will be overridden by useEffect on state changes
+                                        const sr = feature.properties.USABLE_SR || feature.properties.Usable_SR;
+                                        const elec = feature.properties.ELEC_PROD || feature.properties.Elec_Prod;
+                                        const strokeColor = legendMode === 'sr' ? getUsableSRColor(sr) : getSuitabilityColor(elec);
+                                        return {
+                                            color: strokeColor,
+                                            stroke: false,
+                                            weight: 0,
+                                            fillOpacity: 1,
+                                            fillColor: strokeColor
+                                        };
+                                    }}
+                                    onEachFeature={(feature, layer) => {
+                                        layer.on({
+                                            click: (e) => {
+                                                // Check only the current legend's filter and if this building matches it
+                                                const sr = feature.properties.USABLE_SR || feature.properties.Usable_SR;
+                                                const category = getSRCategory(sr);
+                                                const elec = feature.properties.ELEC_PROD || feature.properties.Elec_Prod;
+                                                const suitCat = getSuitabilityCategory(elec);
+                                                const isSRMode = legendMode === 'sr';
+                                                if ((isSRMode && activeFilter && category !== activeFilter) || (!isSRMode && activeSuitability && suitCat !== activeSuitability)) {
+                                                    return;
+                                                }
+                                                
+                                                // Update selection
+                                                setSelected({ properties: feature.properties });
+
+                                                // Center the map on the clicked building with offset for side panel
+                                                const map = mapRef.current;
+                                                if (map && layer.getBounds) {
+                                                    const bounds = layer.getBounds();
+                                                    const center = bounds.getCenter();
+                                                    
+                                                    // Convert lat/lng to pixel coordinates
+                                                    const point = map.latLngToContainerPoint(center);
+                                                    // Offset to account for 360px side panel (shift right by 180px to center in visible area)
+                                                    const offsetPoint = L.point(point.x + 180, point.y);
+                                                    // Convert back to lat/lng
+                                                    const offsetLatLng = map.containerPointToLatLng(offsetPoint);
+                                                    
+                                                    // Fly to the offset position
+                                                    map.flyTo(offsetLatLng, map.getZoom(), { 
+                                                        animate: true, 
+                                                        duration: 0.5 
+                                                    });
+                                                }
+                                            }
+                                        });
+                                        // Remove Leaflet Popup (side panel only)
+                                    }}
+                                />
+                            </LayersControl.Overlay>
+                        )}
+                    </LayersControl>
                     {/* Move Zoom control to top-right alongside basemap control */}
                     <ZoomControl position="topright" />
-                    {geoData && (
-                        <GeoJSON
-                            ref={geoJsonRef}
-                            data={geoData}
-                            style={feature => {
-                                // Initial style; will be overridden by useEffect on state changes
-                                const sr = feature.properties.USABLE_SR || feature.properties.Usable_SR;
-                                const elec = feature.properties.ELEC_PROD || feature.properties.Elec_Prod;
-                                const strokeColor = legendMode === 'sr' ? getUsableSRColor(sr) : getSuitabilityColor(elec);
-                                return {
-                                    color: strokeColor,
-                                    weight: 2,
-                                    fillOpacity: 0.18,
-                                    fillColor: strokeColor
-                                };
-                            }}
-                            onEachFeature={(feature, layer) => {
-                                layer.on({
-                                    click: (e) => {
-                                        // Check only the current legend's filter and if this building matches it
-                                        const sr = feature.properties.USABLE_SR || feature.properties.Usable_SR;
-                                        const category = getSRCategory(sr);
-                                        const elec = feature.properties.ELEC_PROD || feature.properties.Elec_Prod;
-                                        const suitCat = getSuitabilityCategory(elec);
-                                        const isSRMode = legendMode === 'sr';
-                                        if ((isSRMode && activeFilter && category !== activeFilter) || (!isSRMode && activeSuitability && suitCat !== activeSuitability)) {
-                                            return;
-                                        }
-                                        
-                                        // Update selection
-                                        setSelected({ properties: feature.properties });
-
-                                        // Center the map on the clicked building with offset for side panel
-                                        const map = mapRef.current;
-                                        if (map && layer.getBounds) {
-                                            const bounds = layer.getBounds();
-                                            const center = bounds.getCenter();
-                                            
-                                            // Convert lat/lng to pixel coordinates
-                                            const point = map.latLngToContainerPoint(center);
-                                            // Offset to account for 360px side panel (shift right by 180px to center in visible area)
-                                            const offsetPoint = L.point(point.x + 180, point.y);
-                                            // Convert back to lat/lng
-                                            const offsetLatLng = map.containerPointToLatLng(offsetPoint);
-                                            
-                                            // Fly to the offset position
-                                            map.flyTo(offsetLatLng, map.getZoom(), { 
-                                                animate: true, 
-                                                duration: 0.5 
-                                            });
-                                        }
-                                    }
-                                });
-                                // Remove Leaflet Popup (side panel only)
-                            }}
-                        />
-                    )}
                 </MapContainer>
             </div>
         </>
