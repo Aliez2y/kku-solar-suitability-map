@@ -449,8 +449,8 @@ const MapContent = () => {
 
                         <LayersControl.BaseLayer checked name="โหมดมืด (Dark Mode)">
                             <TileLayer
-                                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-                                url="https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png"
+                                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+                                url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
                             />
                         </LayersControl.BaseLayer>
 
@@ -461,24 +461,7 @@ const MapContent = () => {
                             />
                         </LayersControl.BaseLayer>
 
-                        {/* Optional Overlays */}
-                        <LayersControl.Overlay name="รังสีดวงอาทิตย์">
-                            <TileLayer
-                                url="/tiles/{z}/{x}/{y}.png"
-                                maxNativeZoom={16}
-                                maxZoom={20}
-                                opacity={0.8}
-                            />
-                        </LayersControl.Overlay>
-
-                        <LayersControl.Overlay name="รังสีดวงอาทิตย์ (มีเงื่อนไข)">
-                            <TileLayer
-                                url="/tile_layer/solaRaKKN_CON/{z}/{x}/{y}.png"
-                                maxNativeZoom={16}
-                                maxZoom={20}
-                                opacity={0.8}
-                            />
-                        </LayersControl.Overlay>
+                        {/* To add local TileLayers back, host them externally first as they exceed GitHub repo size limits. */}
 
                         {/* GeoJSON Overlay */}
                         {geoData && (
