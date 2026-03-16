@@ -1,622 +1,443 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { MapContainer, GeoJSON, ZoomControl, LayersControl, TileLayer } from 'react-leaflet';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { MapContainer, GeoJSON, ZoomControl, LayersControl, Pane, TileLayer } from 'react-leaflet';
 import Navbar from './Navbar';
 import L from 'leaflet';
 
+const SR_THRESHOLDS = {
+    high: 170.26,
+    medium: 63.03
+};
+
+const SUITABILITY_THRESHOLDS = {
+    high: 29.28,
+    medium: 10.84
+};
+
+const HIDDEN_LAYER_STYLE = {
+    fillOpacity: 0,
+    opacity: 0,
+    interactive: false
+};
+
+const SELECTED_LAYER_STYLE = {
+    color: '#0EA5E9',
+    weight: 3,
+    fill: true,
+    fillOpacity: 1,
+    fillColor: '#06B6D4',
+    opacity: 1,
+    dashArray: null,
+    interactive: true
+};
+
+const toNumber = (value) => {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : 0;
+};
+
+const readNumericProperty = (properties, primaryKey, fallbackKey) => {
+    const primary = properties?.[primaryKey];
+    if (primary !== undefined && primary !== null && primary !== '') {
+        return toNumber(primary);
+    }
+    const fallback = properties?.[fallbackKey];
+    if (fallback !== undefined && fallback !== null && fallback !== '') {
+        return toNumber(fallback);
+    }
+    return 0;
+};
+
+const getUsableSRValue = (properties) => readNumericProperty(properties, 'USABLE_SR', 'Usable_SR');
+const getElecProdValue = (properties) => readNumericProperty(properties, 'ELEC_PROD', 'Elec_Prod');
+const getElecCostValue = (properties) => readNumericProperty(properties, 'ELEC_COST', 'Elec_Cost');
+const getAreaValue = (properties) => toNumber(properties?.AREA);
+
+const formatValue = (value, maximumFractionDigits = 2) => (
+    toNumber(value).toLocaleString(undefined, { maximumFractionDigits })
+);
+
+const getSRCategory = (value) => {
+    if (value > SR_THRESHOLDS.high) return 'high';
+    if (value > SR_THRESHOLDS.medium) return 'medium';
+    return 'low';
+};
+
+const getUsableSRColor = (value) => {
+    if (value > SR_THRESHOLDS.high) return '#EF4444';
+    if (value > SR_THRESHOLDS.medium) return '#F97316';
+    return '#FACC15';
+};
+
+const getSuitabilityCategory = (value) => {
+    if (value > SUITABILITY_THRESHOLDS.high) return 'high';
+    if (value > SUITABILITY_THRESHOLDS.medium) return 'medium';
+    return 'low';
+};
+
+const getSuitabilityColor = (value) => {
+    const category = getSuitabilityCategory(value);
+    if (category === 'high') return '#10B981';
+    if (category === 'medium') return '#F59E0B';
+    return '#EF4444';
+};
+
+const getBaseFeatureStyle = (legendMode, properties) => {
+    const sr = getUsableSRValue(properties);
+    const elec = getElecProdValue(properties);
+    const fillColor = legendMode === 'sr' ? getUsableSRColor(sr) : getSuitabilityColor(elec);
+
+    return {
+        color: fillColor,
+        fill: true,
+        stroke: false,
+        weight: 0,
+        fillOpacity: 1,
+        fillColor,
+        opacity: 1,
+        interactive: true
+    };
+};
 
 
 const MapContent = () => {
     const [geoData, setGeoData] = useState(null);
+    const [isGeoDataLoading, setIsGeoDataLoading] = useState(true);
+    const [geoDataError, setGeoDataError] = useState('');
+    const [reloadTick, setReloadTick] = useState(0);
     const [selected, setSelected] = useState(null); // { latlng, properties, layer }
     const [activeFilter, setActiveFilter] = useState(null); // SR filter: 'high' | 'medium' | 'low' | null
     const [activeSuitability, setActiveSuitability] = useState(null); // Suitability filter by ELEC_PROD
     const [legendMode, setLegendMode] = useState('sr'); // 'sr' | 'suitability' — default is SR
     const mapRef = useRef();
-    const mapContainerRef = useRef();
     const geoJsonRef = useRef();
+    const filterRef = useRef({
+        legendMode: 'sr',
+        activeFilter: null,
+        activeSuitability: null
+    });
+    const selectedBuildingId = selected?.properties?.B_ID ?? null;
 
+    useEffect(() => {
+        filterRef.current = {
+            legendMode,
+            activeFilter,
+            activeSuitability
+        };
+    }, [legendMode, activeFilter, activeSuitability]);
 
-    // Usable_SR color function (red = high, orange = medium, yellow = low)
-    function getUsableSRColor(val) {
-        if (val > 170.26) return '#EF4444'; // red-500 (High)
-        if (val > 63.03) return '#F97316'; // orange-500 (Medium)
-        return '#FACC15'; // yellow-400 (Low)
-    }
-
-    // Get filter category for a given SR value
-    function getSRCategory(val) {
-        if (val > 170.26) return 'high';
-        if (val > 63.03) return 'medium';
-        return 'low';
-    }
-
-    // Suitability by ELEC_PROD thresholds
-    function getSuitabilityCategory(elec) {
-        // High: ELEC_PROD > 29.28
-        // Medium: 10.84 < ELEC_PROD ≤ 29.28
-        // Low: ELEC_PROD ≤ 10.84
-        if (elec > 29.28) return 'high';
-        if (elec > 10.84) return 'medium';
-        return 'low';
-    }
-
-    // Suitability color palette - clear distinct colors
-    function getSuitabilityColor(elec) {
-        const cat = getSuitabilityCategory(elec);
-        if (cat === 'high') return '#10B981'; // emerald-500
-        if (cat === 'medium') return '#F59E0B'; // amber-500
-        return '#EF4444'; // red-500
-    }
-
-    // Handle legend item click
-    const handleLegendClick = (category) => {
-        if (activeFilter === category) {
-            // If clicking the same category, clear filter
-            setActiveFilter(null);
-        } else {
-            // Set new filter
-            setActiveFilter(category);
-        }
-        // Close side panel when filtering
+    const handleLegendClick = useCallback((category) => {
+        setActiveFilter((prev) => (prev === category ? null : category));
         setSelected(null);
-    };
+    }, []);
 
-    // Handle Suitability legend click (ELEC_PROD)
-    const handleSuitabilityClick = (category) => {
-        if (activeSuitability === category) {
-            setActiveSuitability(null);
-        } else {
-            setActiveSuitability(category);
-        }
+    const handleSuitabilityClick = useCallback((category) => {
+        setActiveSuitability((prev) => (prev === category ? null : category));
         setSelected(null);
-    };
+    }, []);
 
-    // Toggle legend mode and clear the non-active filter to avoid hidden combined filtering
-    const switchLegendMode = (mode) => {
+    const switchLegendMode = useCallback((mode) => {
         if (mode === legendMode) return;
         setLegendMode(mode);
         if (mode === 'sr') {
-            // returning to SR: clear Suitability filter
             setActiveSuitability(null);
         } else {
-            // switching to Suitability: clear SR filter
             setActiveFilter(null);
         }
         setSelected(null);
-    };
+    }, [legendMode]);
 
-    useEffect(() => {
-        // Load GeoJSON from public folder
-        fetch('/SolarNKK_Bjson.geojson')
-            .then((res) => res.json())
-            .then((data) => setGeoData(data));
+    const retryLoadGeoData = useCallback(() => {
+        setReloadTick((prev) => prev + 1);
     }, []);
 
-    // Close side panel
-    // Close side panel and reset highlight
-    const handleClosePanel = () => setSelected(null);
+    useEffect(() => {
+        const controller = new AbortController();
 
-    // highlight feature with vibrant selected color
+        const loadGeoData = async () => {
+            setIsGeoDataLoading(true);
+            setGeoDataError('');
+
+            try {
+                const response = await fetch('/SolarNKK_Bjson.geojson', { signal: controller.signal });
+                if (!response.ok) {
+                    throw new Error(`โหลดข้อมูลไม่สำเร็จ (${response.status})`);
+                }
+                const data = await response.json();
+                setGeoData(data);
+            } catch (error) {
+                if (error.name === 'AbortError') return;
+                setGeoData(null);
+                setGeoDataError(error.message || 'ไม่สามารถโหลดชั้นข้อมูลอาคารได้');
+            } finally {
+                if (!controller.signal.aborted) {
+                    setIsGeoDataLoading(false);
+                }
+            }
+        };
+
+        loadGeoData();
+
+        return () => controller.abort();
+    }, [reloadTick]);
+
+    const handleClosePanel = useCallback(() => setSelected(null), []);
+
+    const geoJsonStyle = useCallback((feature) => {
+        const properties = feature?.properties ?? {};
+        return getBaseFeatureStyle(legendMode, properties);
+    }, [legendMode]);
+
+    const handleGeoJsonClick = useCallback((e) => {
+        const clickedLayer = e.propagatedFrom ?? e.layer;
+        if (!clickedLayer?.feature) return;
+
+        const properties = clickedLayer.feature.properties ?? {};
+        const sr = getUsableSRValue(properties);
+        const elec = getElecProdValue(properties);
+        const category = getSRCategory(sr);
+        const suitabilityCategory = getSuitabilityCategory(elec);
+
+        const currentFilters = filterRef.current;
+        const isSRMode = currentFilters.legendMode === 'sr';
+        const blockedByFilter = (isSRMode && currentFilters.activeFilter && category !== currentFilters.activeFilter)
+            || (!isSRMode && currentFilters.activeSuitability && suitabilityCategory !== currentFilters.activeSuitability);
+
+        if (blockedByFilter) return;
+
+        setSelected({ properties });
+
+        const map = mapRef.current;
+        if (map && clickedLayer.getBounds) {
+            const bounds = clickedLayer.getBounds();
+            const center = bounds.getCenter();
+            const point = map.latLngToContainerPoint(center);
+            const offsetPoint = L.point(point.x + 180, point.y);
+            const offsetLatLng = map.containerPointToLatLng(offsetPoint);
+
+            map.flyTo(offsetLatLng, map.getZoom(), {
+                animate: true,
+                duration: 0.5
+            });
+        }
+    }, []);
+
     useEffect(() => {
         if (!geoData || !geoJsonRef.current) return;
 
-        geoJsonRef.current.eachLayer(layer => {
+        geoJsonRef.current.eachLayer((layer) => {
             if (!layer.feature || !layer.setStyle) return;
-            const sr = layer.feature.properties.USABLE_SR || layer.feature.properties.Usable_SR;
+            const properties = layer.feature.properties ?? {};
+            const sr = getUsableSRValue(properties);
             const category = getSRCategory(sr);
-            const elec = layer.feature.properties.ELEC_PROD || layer.feature.properties.Elec_Prod;
-            const suitCat = getSuitabilityCategory(elec);
-            const isSelected = selected && layer.feature.properties.B_ID === selected.properties.B_ID;
+            const elec = getElecProdValue(properties);
+            const suitabilityCategory = getSuitabilityCategory(elec);
+            const isSelected = selectedBuildingId !== null && properties.B_ID === selectedBuildingId;
 
-            // Apply filter only for currently active legend
             const isSRMode = legendMode === 'sr';
             const hasActiveFilter = isSRMode ? !!activeFilter : !!activeSuitability;
             const matchesActiveFilter = isSRMode
                 ? (!activeFilter || category === activeFilter)
-                : (!activeSuitability || suitCat === activeSuitability);
+                : (!activeSuitability || suitabilityCategory === activeSuitability);
 
             if (hasActiveFilter && !matchesActiveFilter) {
-                layer.setStyle({
-                    fillOpacity: 0,
-                    opacity: 0
-                });
-                // Disable pointer events for filtered out buildings
-                if (layer.getElement) {
-                    const element = layer.getElement();
-                    if (element) {
-                        element.style.pointerEvents = 'none';
-                        element.style.cursor = 'default';
-                    }
-                }
+                layer.setStyle(HIDDEN_LAYER_STYLE);
                 return;
             }
-            
-            // Re-enable pointer events for visible buildings
-            if (layer.getElement) {
-                const element = layer.getElement();
-                if (element) {
-                    element.style.pointerEvents = 'auto';
-                    element.style.cursor = 'pointer';
-                }
-            }
-            
+
             if (isSelected) {
-                layer.setStyle({
-                    color: '#0EA5E9', // still keep the selection highlight border
-                    weight: 3,
-                    fillOpacity: 1,
-                    fillColor: '#06B6D4',
-                    opacity: 1,
-                    dashArray: null
-                });
+                layer.setStyle(SELECTED_LAYER_STYLE);
                 if (layer.bringToFront) layer.bringToFront();
-            } else {
-                const strokeColor = legendMode === 'sr' ? getUsableSRColor(sr) : getSuitabilityColor(elec);
-                const fillColor = strokeColor;
-                layer.setStyle({
-                    color: strokeColor,
-                    stroke: false,
-                    weight: 0,
-                    fillOpacity: 1,
-                    fillColor: fillColor,
-                    opacity: 1
-                });
+                return;
             }
+
+            layer.setStyle(getBaseFeatureStyle(legendMode, properties));
         });
-    }, [selected, geoData, activeFilter, activeSuitability, legendMode]);
+    }, [activeFilter, activeSuitability, geoData, legendMode, selectedBuildingId]);
 
     return (
         <>
             <Navbar />
             <div className="relative w-full h-full">
-                {/* Custom style to move Leaflet controls below Navbar and enhance them */}
-                <style>{`
-                    .leaflet-top, .leaflet-control {
-                        margin-top: 80px !important;
-                    }
-                    .leaflet-top.leaflet-right {
-                        right: 12px !important;
-                        top: 10px !important;
-                    }
-                    .leaflet-control-zoom {
-                        margin-top: 20px !important;
-                        margin-bottom: 8px !important;
-                    }
-                    .leaflet-control-zoom a {
-                        background: white !important;
-                        border: none !important;
-                        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
-                        border-radius: 8px !important;
-                        margin-bottom: 4px !important;
-                        width: 36px !important;
-                        height: 36px !important;
-                        line-height: 36px !important;
-                        font-size: 20px !important;
-                        transition: all 0.2s !important;
-                    }
-                    .leaflet-control-zoom a:hover {
-                        background: #3b82f6 !important;
-                        color: white !important;
-                        transform: scale(1.05);
-                    }
-                    .leaflet-control-layers {
-                        margin-top: 0 !important;
-                        border-radius: 12px !important;
-                        border: none !important;
-                        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
-                    }
-                    .leaflet-control-layers-toggle {
-                        background-image: none !important;
-                        width: 36px !important;
-                        height: 36px !important;
-                    }
-                    .leaflet-control-layers-toggle::before {
-                        content: "🗺️";
-                        font-size: 18px;
-                        position: absolute;
-                        top: 50%;
-                        left: 50%;
-                        transform: translate(-50%, -50%);
-                    }
-                    /* Category Headers */
-                    .leaflet-control-layers-base::before {
-                        content: "แผนที่ฐาน (Base Maps)";
-                        display: block;
-                        font-weight: bold;
-                        font-size: 13px;
-                        color: #1e3a8a;
-                        margin-bottom: 8px;
-                        padding-bottom: 4px;
-                        border-bottom: 1px solid #e5e7eb;
-                    }
-                    .leaflet-control-layers-overlays::before {
-                        content: "ชั้นข้อมูล (Overlays)";
-                        display: block;
-                        font-weight: bold;
-                        font-size: 13px;
-                        color: #1e3a8a;
-                        margin-bottom: 8px;
-                        margin-top: 12px;
-                        padding-bottom: 4px;
-                        border-bottom: 1px solid #e5e7eb;
-                    }
-                    /* Styling the inputs to look like nicely rounded checkboxes/radios */
-                    .leaflet-control-layers-expanded {
-                        padding: 12px 16px !important;
-                        border-radius: 12px !important;
-                    }
-                    .leaflet-control-layers label {
-                        display: flex !important;
-                        align-items: center !important;
-                        font-size: 14px !important;
-                        margin-bottom: 6px !important;
-                        color: #374151 !important;
-                        cursor: pointer !important;
-                    }
-                `}</style>
+                {isGeoDataLoading && (
+                    <div className="absolute left-4 top-24 z-[1100] rounded-lg border border-white/10 bg-[var(--color-surface-2)]/90 px-4 py-3 text-sm text-[var(--color-text-secondary)] backdrop-blur-md shadow-lg">
+                        กำลังโหลดข้อมูลอาคาร...
+                    </div>
+                )}
+
+                {geoDataError && (
+                    <div className="absolute left-4 top-24 z-[1100] max-w-[22rem] rounded-xl border border-red-400/40 bg-[var(--color-surface-1)]/95 p-4 text-sm text-[var(--color-text-primary)] shadow-xl backdrop-blur-md">
+                        <p className="font-semibold text-red-300">โหลดชั้นข้อมูลไม่สำเร็จ</p>
+                        <p className="mt-1 text-[var(--color-text-secondary)]">{geoDataError}</p>
+                        <button
+                            onClick={retryLoadGeoData}
+                            className="mt-3 rounded-lg bg-red-500/20 px-3 py-1.5 text-xs font-semibold text-red-200 transition-colors hover:bg-red-500/30"
+                        >
+                            ลองใหม่
+                        </button>
+                    </div>
+                )}
+
                 {/* Side Panel with enhanced design and animations */}
                 {selected && (
-                    <div className="fixed left-2 sm:left-4 top-20 sm:top-24 w-[calc(100vw-1rem)] sm:w-[320px] md:w-[340px] max-w-[95vw] sm:max-w-[90vw] bg-white/90 backdrop-blur-md shadow-2xl z-[1100] rounded-xl overflow-hidden border border-blue-100/50 animate-in slide-in-from-left duration-300 max-h-[calc(100vh-6rem)] overflow-y-auto"
-                         style={{ fontFamily: 'Noto Sans Thai, sans-serif' }}>
+                    <div className="fixed left-2 sm:left-4 top-20 sm:top-24 w-[calc(100vw-1rem)] sm:w-[360px] md:w-[380px] max-w-[95vw] sm:max-w-[90vw] bg-[var(--color-surface-2)]/95 backdrop-blur-md shadow-2xl z-[1100] rounded-xl overflow-hidden border border-white/10 animate-in slide-in-from-left duration-300 max-h-[calc(100vh-6rem)] overflow-y-auto"
+                        style={{ fontFamily: 'Noto Sans Thai, sans-serif' }}>
                         {/* Header */}
-                        <div className="bg-gradient-to-r from-blue-600 to-blue-500 px-4 sm:px-5 py-3 sm:py-4 flex justify-between items-center sticky top-0 z-10">
-                            <h3 className="text-white font-bold text-base sm:text-lg flex items-center gap-2">
-                                <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="currentColor" viewBox="0 0 20 20">
-                                    <path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01.25-3.762zM9.3 16.573A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0zM6 18a1 1 0 001-1v-2.065a8.935 8.935 0 00-2-.712V17a1 1 0 001 1z"/>
-                                </svg>
-                                ข้อมูลอาคาร
-                            </h3>
-                            <button 
-                                className="text-white hover:bg-white/20 rounded-full w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center transition-all duration-200 hover:rotate-90" 
-                                onClick={handleClosePanel} 
-                                title="ปิด">
-                                <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div className="flex items-center justify-between px-4 py-3 border-b border-white/8 flex-shrink-0">
+                            <div className="flex items-center gap-2.5 min-w-0">
+                                <span className="w-2 h-2 rounded-full bg-[var(--color-brand-emerald)] flex-shrink-0"></span>
+                                <span className="text-sm font-semibold text-[var(--color-text-primary)]">อาคาร</span>
+                                <span className="text-sm text-[var(--color-text-secondary)] font-mono truncate">#{selected.properties.B_ID ?? '—'}</span>
+                            </div>
+                            <button
+                                onClick={handleClosePanel}
+                                aria-label="ปิดแผงข้อมูล"
+                                className="w-7 h-7 flex items-center justify-center rounded-lg text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-white/8 transition-colors flex-shrink-0"
+                            >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                                 </svg>
                             </button>
                         </div>
-                        
-                        {/* Content */}
-                        <div className="p-3 sm:p-4 space-y-2.5">
-                            {/* Building ID */}
-                            <div className="bg-white/80 rounded-lg p-3 shadow-sm border border-gray-100/50">
-                                <div className="flex items-center gap-2 mb-1.5">
-                                    <div className="w-6 h-6 bg-blue-100/80 rounded flex items-center justify-center flex-shrink-0">
-                                        <svg className="w-3.5 h-3.5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
-                                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd"/>
-                                        </svg>
-                                    </div>
-                                    <span className="text-xs font-semibold text-gray-500">รหัสอาคาร</span>
-                                </div>
-                                <p className="text-lg sm:text-xl font-bold text-blue-700">{selected.properties.B_ID}</p>
+
+                        {/* Metrics */}
+                        <div className="overflow-y-auto flex-1 px-4 py-1">
+                            <div className="flex items-baseline justify-between py-3 border-b border-white/5">
+                                <span className="text-xs text-[var(--color-text-secondary)]">พื้นที่หลังคา</span>
+                                <span className="text-sm font-semibold text-[var(--color-text-primary)] tabular-nums">
+                                    {formatValue(getAreaValue(selected.properties), 2)}
+                                    <span className="text-xs font-normal text-[var(--color-text-secondary)] ml-1">ตร.ม.</span>
+                                </span>
                             </div>
-
-                            {/* Details Grid */}
-                            <div className="space-y-2">
-                                {/* Area */}
-                                <div className="bg-white/80 rounded-lg p-3 shadow-sm border border-gray-100/50">
-                                    <div className="flex items-start justify-between">
-                                        <div className="flex items-center gap-2.5">
-                                            <div className="w-8 h-8 bg-green-100/80 rounded flex items-center justify-center flex-shrink-0">
-                                                <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 16a1 1 0 011-1h4a1 1 0 011 1v3a1 1 0 01-1 1H5a1 1 0 01-1-1v-3zM14 16a1 1 0 011-1h4a1 1 0 011 1v3a1 1 0 01-1 1h-4a1 1 0 01-1-1v-3z"/>
-                                                </svg>
-                                            </div>
-                                            <div>
-                                                <p className="text-[10px] text-gray-500 font-medium">พื้นที่หลังคา</p>
-                                                <p className="text-base font-bold text-gray-800">{selected.properties.AREA} <span className="text-xs font-normal text-gray-500">ตร.ม.</span></p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Solar Radiation */}
-                                <div className="bg-white/80 rounded-lg p-3 shadow-sm border border-gray-100/50">
-                                    <div className="flex items-start justify-between">
-                                        <div className="flex items-center gap-2.5">
-                                            <div className="w-8 h-8 bg-yellow-100/80 rounded flex items-center justify-center flex-shrink-0">
-                                                <svg className="w-4 h-4 text-yellow-600" fill="currentColor" viewBox="0 0 20 20">
-                                                    <path fillRule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clipRule="evenodd"/>
-                                                </svg>
-                                            </div>
-                                            <div>
-                                                <p className="text-[10px] text-gray-500 font-medium">รังสีดวงอาทิตย์</p>
-                                                <p className="text-base font-bold text-gray-800">
-                                                    {(selected.properties.USABLE_SR || selected.properties.Usable_SR || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })} 
-                                                    <span className="text-xs font-normal text-gray-500 ml-1">MWh/yr</span>
-                                                </p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Electricity Production */}
-                                <div className="bg-white/80 rounded-lg p-3 shadow-sm border border-gray-100/50">
-                                    <div className="flex items-start justify-between">
-                                        <div className="flex items-center gap-2.5">
-                                            <div className="w-8 h-8 bg-orange-100/80 rounded flex items-center justify-center flex-shrink-0">
-                                                <svg className="w-4 h-4 text-orange-600" fill="currentColor" viewBox="0 0 20 20">
-                                                    <path d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z"/>
-                                                </svg>
-                                            </div>
-                                            <div>
-                                                <p className="text-[10px] text-gray-500 font-medium">การผลิตไฟฟ้า</p>
-                                                <p className="text-base font-bold text-gray-800">
-                                                    {(selected.properties.ELEC_PROD || selected.properties.Elec_Prod || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })} 
-                                                    <span className="text-xs font-normal text-gray-500 ml-1">MWh/yr</span>
-                                                </p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Electricity Cost Savings */}
-                                <div className="bg-white/80 rounded-lg p-3 shadow-sm border border-gray-100/50">
-                                    <div className="flex items-start justify-between">
-                                        <div className="flex items-center gap-2.5">
-                                            <div className="w-8 h-8 bg-indigo-100/80 rounded flex items-center justify-center flex-shrink-0">
-                                                <svg className="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                                </svg>
-                                            </div>
-                                            <div>
-                                                <p className="text-[10px] text-gray-500 font-medium">ค่าไฟฟ้าที่ประหยัดได้</p>
-                                                <p className="text-base font-bold text-gray-800">
-                                                    {(selected.properties.ELEC_COST || selected.properties.Elec_Cost || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })} 
-                                                    <span className="text-xs font-normal text-gray-500 ml-1">บาท/ปี</span>
-                                                </p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
+                            <div className="flex items-baseline justify-between py-3 border-b border-white/5">
+                                <span className="text-xs text-[var(--color-text-secondary)]">รังสีดวงอาทิตย์</span>
+                                <span className="text-sm font-semibold text-amber-300 tabular-nums">
+                                    {formatValue(getUsableSRValue(selected.properties), 2)}
+                                    <span className="text-xs font-normal text-[var(--color-text-secondary)] ml-1">MWh/yr</span>
+                                </span>
                             </div>
-
-                            {/* Disclaimer */}
-                            <div className="mt-3 px-1">
-                                <p className="text-[10px] sm:text-xs text-gray-400 italic">
-                                    *หมายเหตุ: ประเมินจากการสมมติว่าอาคารเป็นผู้ใช้ไฟประเภทที่ 1 (บ้านอยู่อาศัย) และผลิตเพื่อใช้เองทั้งหมด
-                                </p>
+                            <div className="flex items-baseline justify-between py-3 border-b border-white/5">
+                                <span className="text-xs text-[var(--color-text-secondary)]">ศักยภาพผลิตไฟฟ้า</span>
+                                <span className="text-sm font-semibold text-[var(--color-text-primary)] tabular-nums">
+                                    {formatValue(getElecProdValue(selected.properties), 2)}
+                                    <span className="text-xs font-normal text-[var(--color-text-secondary)] ml-1">MWh/yr</span>
+                                </span>
                             </div>
+                            <div className="flex items-baseline justify-between py-3">
+                                <span className="text-xs text-[var(--color-text-secondary)]">มูลค่าประหยัดไฟ</span>
+                                <span className="text-sm font-bold text-[var(--color-brand-emerald)] tabular-nums">
+                                    {formatValue(getElecCostValue(selected.properties), 0)}
+                                    <span className="text-xs font-normal text-[var(--color-text-secondary)] ml-1">บาท/ปี</span>
+                                </span>
+                            </div>
+                        </div>
+
+                        {/* Footer */}
+                        <div className="px-4 py-2.5 border-t border-white/5 flex-shrink-0">
+                            <p className="text-[10px] text-[var(--color-text-secondary)] leading-relaxed">
+                                *ประเมินจากผู้ใช้ไฟประเภทที่ 1 (บ้านอยู่อาศัย) ผลิตเองทั้งหมด
+                            </p>
                         </div>
                     </div>
                 )}
                 {/* Legend Card with toggle between SR and Suitability - Less Obtrusive */}
-                <div className="absolute bottom-4 sm:bottom-6 right-2 sm:right-4 z-[1001] bg-white/85 backdrop-blur-md rounded-xl shadow-lg border border-white/40 min-w-[240px] md:min-w-[260px] max-w-[calc(100vw-1rem)] sm:max-w-none overflow-hidden origin-bottom-right transition-transform sm:scale-100 scale-95">
-                    {/* Decorative gradient bar at top */}
-                    <div className={`h-1 transition-all duration-500 ${legendMode === 'sr' ? 'bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500' : 'bg-gradient-to-r from-emerald-500 via-amber-400 to-red-500'}`}></div>
-                    
-                    <div className="px-3 md:px-4 py-2 sm:py-3">
-                        {/* Toggle header with icons */}
-                        <div className="flex items-center justify-between gap-2 mb-3 sm:mb-4">
-                            <div className="inline-flex p-1 bg-gradient-to-br from-gray-100 to-gray-50 rounded-xl shadow-inner">
-                                <button
-                                    onClick={() => switchLegendMode('sr')}
-                                    className={`${
-                                        legendMode === 'sr' 
-                                            ? 'bg-gradient-to-br from-yellow-400 to-orange-500 text-white shadow-lg scale-105' 
-                                            : 'text-gray-600 hover:text-gray-900 hover:bg-white/50'
-                                    } px-3 py-2 text-xs sm:text-sm rounded-lg transition-all duration-300 flex items-center gap-1.5 font-medium`}
-                                    title="รังสีดวงอาทิตย์"
-                                >
-                                    <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fillRule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clipRule="evenodd"/>
-                                    </svg>
-                                    <span className="hidden sm:inline">รังสี</span>
-                                </button>
-                                <button
-                                    onClick={() => switchLegendMode('suitability')}
-                                    className={`${
-                                        legendMode === 'suitability' 
-                                            ? 'bg-gradient-to-br from-emerald-400 to-green-600 text-white shadow-lg scale-105' 
-                                            : 'text-gray-600 hover:text-gray-900 hover:bg-white/50'
-                                    } px-3 py-2 text-xs sm:text-sm rounded-lg transition-all duration-300 flex items-center gap-1.5 font-medium`}
-                                    title="ความเหมาะสม"
-                                >
-                                    <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/>
-                                    </svg>
-                                    <span className="hidden sm:inline">เหมาะสม</span>
-                                </button>
-                            </div>
-                            {(legendMode === 'sr' ? activeFilter : activeSuitability) && (
-                                <button
-                                    onClick={() => legendMode === 'sr' ? setActiveFilter(null) : setActiveSuitability(null)}
-                                    className="text-[10px] sm:text-xs text-blue-600 hover:text-blue-700 font-semibold px-2.5 py-1.5 bg-blue-50 hover:bg-blue-100 rounded-lg transition-all duration-200 flex items-center gap-1 shadow-sm hover:shadow"
-                                >
-                                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                                    </svg>
-                                    รีเซ็ต
-                                </button>
-                            )}
-                        </div>
+                <div className="legend-panel absolute bottom-6 right-4 z-[1000] bg-[var(--color-surface-2)]/90 backdrop-blur-md p-4 rounded-xl shadow-[0_10px_30px_rgba(0,0,0,0.5)] border border-white/10 animate-fade-in delay-200 w-72 overflow-hidden font-sans">
+                    {/* Mode tabs */}
+                    <div className="flex border-b border-white/8">
+                        <button
+                            onClick={() => switchLegendMode('sr')}
+                            aria-pressed={legendMode === 'sr'}
+                            className={`flex-1 py-2.5 px-3 text-sm font-semibold tracking-wide transition-colors ${legendMode === 'sr'
+                                ? 'text-white bg-white/8'
+                                : 'text-[var(--color-text-secondary)] hover:text-white hover:bg-white/5'
+                                }`}
+                        >
+                            ☀️ รังสี
+                        </button>
+                        <button
+                            onClick={() => switchLegendMode('suitability')}
+                            aria-pressed={legendMode === 'suitability'}
+                            className={`flex-1 py-2.5 px-3 text-sm font-semibold tracking-wide transition-colors border-l border-white/8 ${legendMode === 'suitability'
+                                ? 'text-white bg-white/8'
+                                : 'text-[var(--color-text-secondary)] hover:text-white hover:bg-white/5'
+                                }`}
+                        >
+                            ⚡ เหมาะสม
+                        </button>
+                    </div>
 
+                    {/* Items */}
+                    <div className="p-2.5 space-y-0.5">
                         {legendMode === 'sr' ? (
-                        <>
-                            <div className="mb-3 flex items-center gap-2">
-                                <div className={`w-1 h-8 rounded-full transition-all duration-500 ${legendMode === 'sr' ? 'bg-gradient-to-b from-red-500 via-orange-500 to-yellow-500' : 'bg-gray-300'}`}></div>
-                                <p className="text-[10px] sm:text-xs text-gray-600 font-medium">คลิกเพื่อกรองตามระดับรังสีดวงอาทิตย์</p>
-                            </div>
-                            <div className="space-y-2">
-                                <div
-                                    onClick={() => handleLegendClick('high')}
-                                    className={`group flex items-center gap-3 p-2.5 sm:p-3 rounded-xl transition-all duration-300 cursor-pointer transform hover:scale-[1.02] ${
-                                        activeFilter === 'high'
-                                            ? 'bg-gradient-to-r from-red-50 to-red-100 ring-2 ring-red-400 shadow-lg shadow-red-200/50'
-                                            : 'bg-white hover:bg-red-50 hover:shadow-md border border-gray-200'
-                                    }`}
-                                >
-                                    <div className={`w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-gradient-to-br from-red-400 to-red-600 shadow-md flex items-center justify-center flex-shrink-0 transition-transform group-hover:rotate-12 ${activeFilter === 'high' ? 'ring-2 ring-red-300 ring-offset-2' : ''}`}>
-                                        <svg className="w-3.5 h-3.5 text-white" fill="currentColor" viewBox="0 0 20 20">
-                                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
-                                        </svg>
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-sm sm:text-base font-bold text-gray-800">&gt; 170.26</span>
-                                            <span className="text-[10px] px-1.5 py-0.5 bg-red-200 text-red-800 rounded-full font-semibold">MWh/yr</span>
-                                        </div>
-                                        <p className="text-[10px] sm:text-xs text-gray-600 mt-0.5">พื้นที่รับรังสีสูงมาก</p>
-                                    </div>
-                                    {activeFilter === 'high' && (
-                                        <svg className="w-5 h-5 text-red-600 flex-shrink-0 animate-pulse" fill="currentColor" viewBox="0 0 20 20">
-                                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/>
-                                        </svg>
-                                    )}
-                                </div>
-                                <div
-                                    onClick={() => handleLegendClick('medium')}
-                                    className={`group flex items-center gap-3 p-2.5 sm:p-3 rounded-xl transition-all duration-300 cursor-pointer transform hover:scale-[1.02] ${
-                                        activeFilter === 'medium'
-                                            ? 'bg-gradient-to-r from-orange-50 to-orange-100 ring-2 ring-orange-400 shadow-lg shadow-orange-200/50'
-                                            : 'bg-white hover:bg-orange-50 hover:shadow-md border border-gray-200'
-                                    }`}
-                                >
-                                    <div className={`w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-gradient-to-br from-orange-400 to-orange-600 shadow-md flex items-center justify-center flex-shrink-0 transition-transform group-hover:rotate-12 ${activeFilter === 'medium' ? 'ring-2 ring-orange-300 ring-offset-2' : ''}`}>
-                                        <svg className="w-3.5 h-3.5 text-white" fill="currentColor" viewBox="0 0 20 20">
-                                            <path fillRule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clipRule="evenodd"/>
-                                        </svg>
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-sm sm:text-base font-bold text-gray-800">63.03 – 170.26</span>
-                                            <span className="text-[10px] px-1.5 py-0.5 bg-orange-200 text-orange-800 rounded-full font-semibold">MWh/yr</span>
-                                        </div>
-                                        <p className="text-[10px] sm:text-xs text-gray-600 mt-0.5">พื้นที่รับรังสีปานกลาง</p>
-                                    </div>
-                                    {activeFilter === 'medium' && (
-                                        <svg className="w-5 h-5 text-orange-600 flex-shrink-0 animate-pulse" fill="currentColor" viewBox="0 0 20 20">
-                                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/>
-                                        </svg>
-                                    )}
-                                </div>
-                                <div
-                                    onClick={() => handleLegendClick('low')}
-                                    className={`group flex items-center gap-3 p-2.5 sm:p-3 rounded-xl transition-all duration-300 cursor-pointer transform hover:scale-[1.02] ${
-                                        activeFilter === 'low'
-                                            ? 'bg-gradient-to-r from-yellow-50 to-yellow-100 ring-2 ring-yellow-400 shadow-lg shadow-yellow-200/50'
-                                            : 'bg-white hover:bg-yellow-50 hover:shadow-md border border-gray-200'
-                                    }`}
-                                >
-                                    <div className={`w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-gradient-to-br from-yellow-400 to-yellow-600 shadow-md flex items-center justify-center flex-shrink-0 transition-transform group-hover:rotate-12 ${activeFilter === 'low' ? 'ring-2 ring-yellow-300 ring-offset-2' : ''}`}>
-                                        <svg className="w-3.5 h-3.5 text-white" fill="currentColor" viewBox="0 0 20 20">
-                                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM7 9a1 1 0 000 2h6a1 1 0 100-2H7z" clipRule="evenodd"/>
-                                        </svg>
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-sm sm:text-base font-bold text-gray-800">≤ 63.03</span>
-                                            <span className="text-[10px] px-1.5 py-0.5 bg-yellow-200 text-yellow-800 rounded-full font-semibold">MWh/yr</span>
-                                        </div>
-                                        <p className="text-[10px] sm:text-xs text-gray-600 mt-0.5">พื้นที่รับรังสีต่ำ</p>
-                                    </div>
-                                    {activeFilter === 'low' && (
-                                        <svg className="w-5 h-5 text-yellow-600 flex-shrink-0 animate-pulse" fill="currentColor" viewBox="0 0 20 20">
-                                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/>
-                                        </svg>
-                                    )}
-                                </div>
-                            </div>
-                        </>
-                    ) : (
-                        <>
-                            <div className="mb-3 flex items-center gap-2">
-                                <div className={`w-1 h-8 rounded-full transition-all duration-500 ${legendMode === 'suitability' ? 'bg-gradient-to-b from-emerald-500 via-amber-400 to-red-500' : 'bg-gray-300'}`}></div>
-                                <p className="text-[10px] sm:text-xs text-gray-600 font-medium">คลิกเพื่อกรองตามค่าการผลิตไฟฟ้า</p>
-                            </div>
-                            <div className="space-y-2">
-                                <div 
-                                    onClick={() => handleSuitabilityClick('high')} 
-                                    className={`group flex items-center gap-3 p-2.5 sm:p-3 rounded-xl transition-all duration-300 cursor-pointer transform hover:scale-[1.02] ${
-                                        activeSuitability === 'high' 
-                                            ? 'bg-gradient-to-r from-emerald-50 to-emerald-100 ring-2 ring-emerald-400 shadow-lg shadow-emerald-200/50' 
-                                            : 'bg-white hover:bg-emerald-50 hover:shadow-md border border-gray-200'
-                                    }`}
-                                >
-                                    <div className={`w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-gradient-to-br from-emerald-400 to-emerald-600 shadow-md flex items-center justify-center flex-shrink-0 transition-transform group-hover:rotate-12 ${activeSuitability === 'high' ? 'ring-2 ring-emerald-300 ring-offset-2' : ''}`}>
-                                        <svg className="w-3.5 h-3.5 text-white" fill="currentColor" viewBox="0 0 20 20">
-                                            <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/>
-                                        </svg>
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-sm sm:text-base font-bold text-gray-800">&gt; 29.28</span>
-                                            <span className="text-[10px] px-1.5 py-0.5 bg-emerald-200 text-emerald-900 rounded-full font-semibold">MWh/yr</span>
-                                        </div>
-                                        <p className="text-[10px] sm:text-xs text-gray-600 mt-0.5 font-medium">เหมาะสมมาก</p>
-                                    </div>
-                                    {activeSuitability === 'high' && (
-                                        <svg className="w-5 h-5 text-emerald-600 flex-shrink-0 animate-pulse" fill="currentColor" viewBox="0 0 20 20">
-                                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/>
-                                        </svg>
-                                    )}
-                                </div>
-                                <div 
-                                    onClick={() => handleSuitabilityClick('medium')} 
-                                    className={`group flex items-center gap-3 p-2.5 sm:p-3 rounded-xl transition-all duration-300 cursor-pointer transform hover:scale-[1.02] ${
-                                        activeSuitability === 'medium' 
-                                            ? 'bg-gradient-to-r from-amber-50 to-amber-100 ring-2 ring-amber-400 shadow-lg shadow-amber-200/50' 
-                                            : 'bg-white hover:bg-amber-50 hover:shadow-md border border-gray-200'
-                                    }`}
-                                >
-                                    <div className={`w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-gradient-to-br from-amber-400 to-amber-600 shadow-md flex items-center justify-center flex-shrink-0 transition-transform group-hover:rotate-12 ${activeSuitability === 'medium' ? 'ring-2 ring-amber-300 ring-offset-2' : ''}`}>
-                                        <svg className="w-3.5 h-3.5 text-white" fill="currentColor" viewBox="0 0 20 20">
-                                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd"/>
-                                        </svg>
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-sm sm:text-base font-bold text-gray-800">10.84 – 29.28</span>
-                                            <span className="text-[10px] px-1.5 py-0.5 bg-amber-200 text-amber-900 rounded-full font-semibold">MWh/yr</span>
-                                        </div>
-                                        <p className="text-[10px] sm:text-xs text-gray-600 mt-0.5 font-medium">เหมาะสมปานกลาง</p>
-                                    </div>
-                                    {activeSuitability === 'medium' && (
-                                        <svg className="w-5 h-5 text-amber-600 flex-shrink-0 animate-pulse" fill="currentColor" viewBox="0 0 20 20">
-                                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/>
-                                        </svg>
-                                    )}
-                                </div>
-                                <div 
-                                    onClick={() => handleSuitabilityClick('low')} 
-                                    className={`group flex items-center gap-3 p-2.5 sm:p-3 rounded-xl transition-all duration-300 cursor-pointer transform hover:scale-[1.02] ${
-                                        activeSuitability === 'low' 
-                                            ? 'bg-gradient-to-r from-red-50 to-red-100 ring-2 ring-red-400 shadow-lg shadow-red-200/50' 
-                                            : 'bg-white hover:bg-red-50 hover:shadow-md border border-gray-200'
-                                    }`}
-                                >
-                                    <div className={`w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-gradient-to-br from-red-400 to-red-600 shadow-md flex items-center justify-center flex-shrink-0 transition-transform group-hover:rotate-12 ${activeSuitability === 'low' ? 'ring-2 ring-red-300 ring-offset-2' : ''}`}>
-                                        <svg className="w-3.5 h-3.5 text-white" fill="currentColor" viewBox="0 0 20 20">
-                                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd"/>
-                                        </svg>
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-sm sm:text-base font-bold text-gray-800">≤ 10.84</span>
-                                            <span className="text-[10px] px-1.5 py-0.5 bg-red-200 text-red-900 rounded-full font-semibold">MWh/yr</span>
-                                        </div>
-                                        <p className="text-[10px] sm:text-xs text-gray-600 mt-0.5 font-medium">เหมาะสมน้อย</p>
-                                    </div>
-                                    {activeSuitability === 'low' && (
-                                        <svg className="w-5 h-5 text-red-600 flex-shrink-0 animate-pulse" fill="currentColor" viewBox="0 0 20 20">
-                                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/>
-                                        </svg>
-                                    )}
-                                </div>
-                            </div>
-                        </>
-                    )}
+                            <>
+                                {[
+                                    { cat: 'high', color: '#EF4444', label: 'รังสีสูงมาก', range: '> 170' },
+                                    { cat: 'medium', color: '#F97316', label: 'รังสีปานกลาง', range: '63–170' },
+                                    { cat: 'low', color: '#FACC15', label: 'รังสีต่ำ', range: '≤ 63' },
+                                ].map(({ cat, color, label, range }) => (
+                                    <button
+                                        key={cat}
+                                        onClick={() => handleLegendClick(cat)}
+                                        className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-left transition-colors ${activeFilter === cat ? 'bg-white/10 ring-1 ring-white/15' : 'hover:bg-white/5'
+                                            }`}
+                                    >
+                                        <span className="w-3 h-3 rounded-sm flex-shrink-0" style={{ backgroundColor: color }}></span>
+                                        <span className="flex-1 text-sm text-[var(--color-text-primary)]">{label}</span>
+                                        <span className="text-[12px] text-[var(--color-text-secondary)] tabular-nums">{range}</span>
+                                    </button>
+                                ))}
+                            </>
+                        ) : (
+                            <>
+                                {[
+                                    { cat: 'high', color: '#10B981', label: 'เหมาะสมมาก', range: '> 29' },
+                                    { cat: 'medium', color: '#F59E0B', label: 'เหมาะสมปานกลาง', range: '10–29' },
+                                    { cat: 'low', color: '#EF4444', label: 'เหมาะสมน้อย', range: '≤ 10' },
+                                ].map(({ cat, color, label, range }) => (
+                                    <button
+                                        key={cat}
+                                        onClick={() => handleSuitabilityClick(cat)}
+                                        className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-left transition-colors ${activeSuitability === cat ? 'bg-white/10 ring-1 ring-white/15' : 'hover:bg-white/5'
+                                            }`}
+                                    >
+                                        <span className="w-3 h-3 rounded-sm flex-shrink-0" style={{ backgroundColor: color }}></span>
+                                        <span className="flex-1 text-sm text-[var(--color-text-primary)]">{label}</span>
+                                        <span className="text-[12px] text-[var(--color-text-secondary)] tabular-nums">{range}</span>
+                                    </button>
+                                ))}
+                            </>
+                        )}
+                    </div>
+
+                    {/* Footer: hint + reset */}
+                    <div className="px-3 pb-3 flex items-center justify-between gap-2">
+                        <p className="text-[11px] text-[var(--color-text-secondary)]">คลิกเพื่อกรอง</p>
+                        {(legendMode === 'sr' ? activeFilter : activeSuitability) && (
+                            <button
+                                onClick={() => legendMode === 'sr' ? setActiveFilter(null) : setActiveSuitability(null)}
+                                className="text-[11px] text-[var(--color-brand-emerald)] hover:text-white px-2 py-1 rounded bg-white/5 hover:bg-white/10 transition-colors"
+                            >
+                                รีเซ็ต
+                            </button>
+                        )}
                     </div>
                 </div>
-                <div ref={mapContainerRef} className="absolute inset-0 pointer-events-none z-[900]" style={{ width: '100%', height: '100%' }} />
+                <style>
+                    {`
+                    .leaflet-top {
+                        top: 90px !important;
+                    }
+                    .leaflet-control-layers:hover {
+                        transform: scale(1.05);
+                    }
+                    `}
+                </style>
                 <MapContainer
+                    ref={mapRef}
                     style={{ width: '100%', height: '100vh' }}
                     center={[16.476025, 102.824633]}
                     zoom={18}
                     scrollWheelZoom={true}
                     zoomControl={false}
-                    whenCreated={mapInstance => (mapRef.current = mapInstance)}
                 >
                     <LayersControl position="topright">
                         <LayersControl.BaseLayer name="OpenStreetMap">
@@ -632,7 +453,7 @@ const MapContent = () => {
                                 url="https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png"
                             />
                         </LayersControl.BaseLayer>
-                        
+
                         <LayersControl.BaseLayer name="ภาพดาวเทียม (Satellite)">
                             <TileLayer
                                 attribution='Tiles &copy; Esri'
@@ -641,7 +462,7 @@ const MapContent = () => {
                         </LayersControl.BaseLayer>
 
                         {/* Optional Overlays */}
-                        <LayersControl.Overlay name="รังสีดวงอาทิตย์ (Tile Layer)">
+                        <LayersControl.Overlay name="รังสีดวงอาทิตย์">
                             <TileLayer
                                 url="/tiles/{z}/{x}/{y}.png"
                                 maxNativeZoom={16}
@@ -650,68 +471,29 @@ const MapContent = () => {
                             />
                         </LayersControl.Overlay>
 
+                        <LayersControl.Overlay name="รังสีดวงอาทิตย์ (มีเงื่อนไข)">
+                            <TileLayer
+                                url="/tile_layer/solaRaKKN_CON/{z}/{x}/{y}.png"
+                                maxNativeZoom={16}
+                                maxZoom={20}
+                                opacity={0.8}
+                            />
+                        </LayersControl.Overlay>
+
                         {/* GeoJSON Overlay */}
                         {geoData && (
-                            <LayersControl.Overlay checked name="อาคารเทศบาล (GeoJSON)">
+                            <LayersControl.Overlay checked name="อาคาร (GeoJSON)">
                                 <GeoJSON
                                     ref={geoJsonRef}
                                     data={geoData}
-                                    style={feature => {
-                                        // Initial style; will be overridden by useEffect on state changes
-                                        const sr = feature.properties.USABLE_SR || feature.properties.Usable_SR;
-                                        const elec = feature.properties.ELEC_PROD || feature.properties.Elec_Prod;
-                                        const strokeColor = legendMode === 'sr' ? getUsableSRColor(sr) : getSuitabilityColor(elec);
-                                        return {
-                                            color: strokeColor,
-                                            stroke: false,
-                                            weight: 0,
-                                            fillOpacity: 1,
-                                            fillColor: strokeColor
-                                        };
-                                    }}
-                                    onEachFeature={(feature, layer) => {
-                                        layer.on({
-                                            click: (e) => {
-                                                // Check only the current legend's filter and if this building matches it
-                                                const sr = feature.properties.USABLE_SR || feature.properties.Usable_SR;
-                                                const category = getSRCategory(sr);
-                                                const elec = feature.properties.ELEC_PROD || feature.properties.Elec_Prod;
-                                                const suitCat = getSuitabilityCategory(elec);
-                                                const isSRMode = legendMode === 'sr';
-                                                if ((isSRMode && activeFilter && category !== activeFilter) || (!isSRMode && activeSuitability && suitCat !== activeSuitability)) {
-                                                    return;
-                                                }
-                                                
-                                                // Update selection
-                                                setSelected({ properties: feature.properties });
-
-                                                // Center the map on the clicked building with offset for side panel
-                                                const map = mapRef.current;
-                                                if (map && layer.getBounds) {
-                                                    const bounds = layer.getBounds();
-                                                    const center = bounds.getCenter();
-                                                    
-                                                    // Convert lat/lng to pixel coordinates
-                                                    const point = map.latLngToContainerPoint(center);
-                                                    // Offset to account for 360px side panel (shift right by 180px to center in visible area)
-                                                    const offsetPoint = L.point(point.x + 180, point.y);
-                                                    // Convert back to lat/lng
-                                                    const offsetLatLng = map.containerPointToLatLng(offsetPoint);
-                                                    
-                                                    // Fly to the offset position
-                                                    map.flyTo(offsetLatLng, map.getZoom(), { 
-                                                        animate: true, 
-                                                        duration: 0.5 
-                                                    });
-                                                }
-                                            }
-                                        });
-                                        // Remove Leaflet Popup (side panel only)
-                                    }}
+                                    style={geoJsonStyle}
+                                    eventHandlers={{ click: handleGeoJsonClick }}
+                                    pane="buildings-pane"
                                 />
                             </LayersControl.Overlay>
                         )}
                     </LayersControl>
+                    <Pane name="buildings-pane" style={{ zIndex: 460 }} />
                     {/* Move Zoom control to top-right alongside basemap control */}
                     <ZoomControl position="topright" />
                 </MapContainer>

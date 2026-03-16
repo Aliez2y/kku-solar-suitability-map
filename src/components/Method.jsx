@@ -44,80 +44,119 @@ function Method() {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100">
+    <div className="min-h-screen bg-[var(--color-bg-base)] text-[var(--color-text-primary)] font-sans">
       <Navbar />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 pb-16 space-y-8 sm:space-y-10">
-        <section className="rounded-2xl border border-slate-700 bg-gradient-to-br from-slate-900 to-slate-950 p-6 sm:p-8 shadow-sm">
-          <p className="text-blue-300 text-sm font-medium">บทที่ 3 • ขั้นตอนการดำเนินงานวิจัย</p>
-          <h1 className="mt-2 text-2xl sm:text-3xl lg:text-4xl font-bold leading-tight text-white tracking-tight">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 pb-16 space-y-8 sm:space-y-12 relative z-10 animate-fade-up">
+        {/* Ambient background glows */}
+        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-900/10 blur-[120px] rounded-full mix-blend-screen pointer-events-none -z-10"></div>
+        <div className="absolute top-1/2 left-0 w-[400px] h-[400px] bg-[var(--color-brand-emerald)]/5 blur-[100px] rounded-full mix-blend-screen pointer-events-none -z-10"></div>
+
+        <section className="rounded-3xl border border-white/5 bg-[var(--color-surface-1)]/50 backdrop-blur-sm p-8 sm:p-12 shadow-2xl relative overflow-hidden group">
+          <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
+          <p className="font-outfit text-sm font-bold tracking-widest text-[var(--color-brand-emerald)] uppercase mb-3 drop-shadow-sm">Methodology</p>
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold leading-tight text-white tracking-tight">
             การวิเคราะห์ข้อมูลเชิงพื้นที่เพื่อประเมินศักยภาพพลังงานแสงอาทิตย์บนหลังคาอาคาร
           </h1>
-          <p className="mt-4 text-slate-300 leading-relaxed max-w-4xl">
+          <p className="mt-6 text-lg text-[var(--color-text-secondary)] leading-relaxed max-w-4xl relative z-10">
             เนื้อหานี้สรุปจากบทที่ 3 ของรายงาน โดยเน้นเฉพาะกระบวนการวิเคราะห์ข้อมูลแบบละเอียด ตั้งแต่การเตรียมข้อมูลเชิงพื้นที่
             การคำนวณปัจจัยทางกายภาพของหลังคา การคัดกรองพื้นที่เหมาะสม ไปจนถึงการประเมินพลังงานแสงอาทิตย์และพลังงานไฟฟ้าที่ผลิตได้
             เพื่อให้เข้าใจตรรกะการวิเคราะห์ของระบบ SolarSuit-KKU อย่างเป็นขั้นตอน
           </p>
         </section>
 
-        <section className="rounded-2xl border border-white/10 bg-slate-900/70 p-6 sm:p-8">
-          <h2 className="text-xl sm:text-2xl font-semibold text-white">ชุดข้อมูลที่ใช้ในการวิเคราะห์</h2>
-          <div className="mt-5 grid grid-cols-1 md:grid-cols-3 gap-4">
+        <section className="animate-fade-up delay-100">
+          <div className="flex items-center gap-3 mb-6">
+            <span className="w-8 h-1 bg-[var(--color-brand-emerald)] rounded-full inline-block shadow-[0_0_10px_var(--color-brand-emerald)]"></span>
+            <h2 className="text-2xl sm:text-3xl font-bold text-white">ชุดข้อมูลที่ใช้ในการวิเคราะห์</h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {inputData.map((item) => (
-              <article key={item.title} className="rounded-xl border border-slate-700 bg-slate-950/70 p-4 hover:border-blue-500/30 transition-colors shadow-sm">
-                <h3 className="font-semibold text-blue-200">{item.title}</h3>
-                <p className="mt-2 text-sm text-slate-300 leading-relaxed">{item.detail}</p>
+              <article key={item.title} className="rounded-2xl border border-white/5 bg-[var(--color-surface-2)]/80 p-6 hover:-translate-y-1 hover:border-[var(--color-brand-emerald)]/30 transition-all duration-300 shadow-lg group">
+                <div className="w-10 h-10 rounded-xl bg-[var(--color-brand-emerald)]/10 text-[var(--color-brand-emerald)] flex items-center justify-center mb-4 border border-[var(--color-brand-emerald)]/20 group-hover:scale-110 transition-transform">
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" /></svg>
+                </div>
+                <h3 className="font-bold text-white text-lg tracking-wide">{item.title}</h3>
+                <p className="mt-3 text-sm text-[var(--color-text-secondary)] leading-loose">{item.detail}</p>
               </article>
             ))}
           </div>
         </section>
 
-        <section className="rounded-2xl border border-white/10 bg-slate-900/70 p-6 sm:p-8">
-          <h2 className="text-xl sm:text-2xl font-semibold text-white">ขั้นตอนการวิเคราะห์ข้อมูล (Detailed Workflow)</h2>
-          <div className="mt-5 grid grid-cols-1 md:grid-cols-2 gap-4">
-            {analysisSteps.map((step) => (
-              <article key={step.title} className="rounded-xl border border-slate-700 bg-slate-950/70 p-4 hover:border-blue-500/30 transition-colors shadow-sm">
-                <h3 className="font-semibold text-white">{step.title}</h3>
-                <p className="mt-2 text-sm text-slate-300 leading-relaxed">{step.body}</p>
+        <section className="animate-fade-up delay-200">
+          <div className="flex items-center gap-3 mb-6">
+            <span className="w-8 h-1 bg-blue-500 rounded-full inline-block shadow-[0_0_10px_rgba(59,130,246,0.5)]"></span>
+            <h2 className="text-2xl sm:text-3xl font-bold text-white">ขั้นตอนการวิเคราะห์ข้อมูล</h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {analysisSteps.map((step, idx) => (
+              <article key={step.title} className="rounded-2xl border border-white/5 bg-[var(--color-surface-2)]/80 p-6 relative overflow-hidden group hover:border-blue-500/30 transition-all duration-300 hover:shadow-[0_10px_30px_-10px_rgba(59,130,246,0.3)]">
+                <div className="absolute top-0 right-0 p-4 opacity-10 font-outfit text-6xl font-black italic text-white group-hover:scale-110 group-hover:text-blue-500 group-hover:opacity-20 transition-all duration-500 pointer-events-none">
+                  0{idx + 1}
+                </div>
+                <h3 className="font-bold text-white text-lg relative z-10 drop-shadow-sm">{step.title}</h3>
+                <p className="mt-3 text-sm text-[var(--color-text-secondary)] leading-loose relative z-10">{step.body}</p>
               </article>
             ))}
           </div>
         </section>
 
-        <section className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-          <article className="rounded-2xl border border-white/10 bg-slate-900/70 p-6 sm:p-8">
-            <h2 className="text-xl font-semibold text-white">เกณฑ์คัดกรองความเหมาะสมของหลังคา</h2>
-            <ul className="mt-4 space-y-3 text-sm sm:text-base text-slate-300 leading-relaxed list-disc pl-5">
-              <li>หลังคาเอียงที่เหมาะสม: ความชันไม่เกิน 45° (Slope ≤ 45°)</li>
-              <li>ทิศทางหลังคาที่เหมาะสม: ช่วง 67.5°–292.5° (ตะวันออก–ใต้–ตะวันตก)</li>
-              <li>หลังคาแบน: ความชันต่ำกว่า 10° (Slope &lt; 10°) ถือว่ามีศักยภาพสูง เพราะปรับมุมติดตั้งได้ยืดหยุ่น</li>
-              <li>ใช้ Conditional (Con) สร้างแผนที่หน้ากากเพื่อเก็บเฉพาะพื้นที่ผ่านเกณฑ์</li>
+        <section className="grid grid-cols-1 lg:grid-cols-2 gap-8 animate-fade-up delay-300">
+          <article className="rounded-3xl border border-white/5 bg-[var(--color-surface-1)]/80 p-8 sm:p-10 shadow-xl relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-[var(--color-brand-amber)]/5 rounded-bl-full"></div>
+            <h2 className="text-2xl font-bold text-white mb-6">เกณฑ์คัดกรองความเหมาะสมของหลังคา</h2>
+            <ul className="space-y-4 text-[var(--color-text-secondary)] leading-relaxed relative z-10">
+              <li className="flex items-start gap-3">
+                <svg className="w-5 h-5 text-[var(--color-brand-amber)] mt-1 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                <span><strong>หลังคาเอียงที่เหมาะสม:</strong> ความชันไม่เกิน 45° (Slope ≤ 45°)</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <svg className="w-5 h-5 text-[var(--color-brand-amber)] mt-1 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                <span><strong>ทิศทางหลังคาที่เหมาะสม:</strong> ช่วง 67.5°–292.5° (ตะวันออก–ใต้–ตะวันตก)</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <svg className="w-5 h-5 text-[var(--color-brand-amber)] mt-1 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                <span><strong>หลังคาแบน:</strong> ความชันต่ำกว่า 10° (Slope &lt; 10°) ถือว่ามีศักยภาพสูง เพราะปรับมุมติดตั้งได้ยืดหยุ่น</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <svg className="w-5 h-5 text-[var(--color-brand-amber)] mt-1 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                <span>ใช้ Conditional (Con) สร้างแผนที่หน้ากากเพื่อเก็บเฉพาะพื้นที่ผ่านเกณฑ์</span>
+              </li>
             </ul>
           </article>
 
-          <article className="rounded-2xl border border-white/10 bg-slate-900/70 p-6 sm:p-8">
-            <h2 className="text-xl font-semibold text-white">การคำนวณพลังงาน</h2>
-            <div className="mt-4 space-y-4 text-slate-300">
-              <div className="rounded-xl border border-slate-700 bg-slate-950/70 p-4 shadow-sm">
-                <p className="text-sm font-semibold text-blue-200">สมการพลังงานแสงอาทิตย์รวมบนหลังคา</p>
-                <p className="mt-2 text-sm sm:text-base">S = (A × H) / 1000</p>
-                <p className="mt-2 text-xs sm:text-sm">โดย A = พื้นที่หลังคา (m²), H = รังสีเฉลี่ยรายปี (kWh/m²/yr), S = พลังงานรวม (MWh/yr)</p>
+          <article className="rounded-3xl border border-white/5 bg-[var(--color-surface-1)]/80 p-8 sm:p-10 shadow-xl relative overflow-hidden">
+            <h2 className="text-2xl font-bold text-white mb-6">การคำนวณพลังงาน</h2>
+            <div className="space-y-5">
+              <div className="rounded-2xl border border-white/5 bg-white/5 p-5 hover:bg-white/10 transition-colors">
+                <p className="text-sm font-bold tracking-wide text-[var(--color-brand-emerald)] font-outfit uppercase drop-shadow-sm">Total Solar Radiation</p>
+                <div className="flex items-baseline gap-4 mt-2">
+                  <p className="text-xl sm:text-2xl font-outfit font-bold text-white tracking-widest">S = (A × H) / 1000</p>
+                </div>
+                <p className="mt-3 text-sm text-[var(--color-text-secondary)]">โดย A = พื้นที่หลังคา (m²), H = รังสีเฉลี่ยรายปี (kWh/m²/yr), S = พลังงานรวม (MWh/yr)</p>
               </div>
-              <div className="rounded-xl border border-slate-700 bg-slate-950/70 p-4 shadow-sm">
-                <p className="text-sm font-semibold text-blue-200">สมการพลังงานไฟฟ้าที่ผลิตได้</p>
-                <p className="mt-2 text-sm sm:text-base">E = S × r × PR</p>
-                <p className="mt-2 text-xs sm:text-sm">โดย r = ประสิทธิภาพแผง (ช่วง 15–20%), PR = ประสิทธิภาพระบบ (ใช้ 0.86), E = ไฟฟ้าที่ผลิตได้ (MWh/yr)</p>
+              <div className="rounded-2xl border border-white/5 bg-white/5 p-5 hover:bg-white/10 transition-colors">
+                <p className="text-sm font-bold tracking-wide text-blue-400 font-outfit uppercase drop-shadow-sm">Energy Production</p>
+                <div className="flex items-baseline gap-4 mt-2">
+                  <p className="text-xl sm:text-2xl font-outfit font-bold text-white tracking-widest">E = S × r × PR</p>
+                </div>
+                <p className="mt-3 text-sm text-[var(--color-text-secondary)]">โดย r = ประสิทธิภาพแผง (ช่วง 15–20%), PR = ประสิทธิภาพระบบ (ใช้ 0.86), E = ไฟฟ้าที่ผลิตได้ (MWh/yr)</p>
               </div>
             </div>
           </article>
         </section>
 
-        <section className="rounded-2xl border border-blue-500/30 bg-blue-950/20 p-6 sm:p-8 shadow-sm">
-          <h2 className="text-xl sm:text-2xl font-semibold text-white">สรุปเชิงระบบ</h2>
-          <p className="mt-3 text-slate-200 leading-relaxed">
+        <section className="rounded-3xl bg-[var(--color-brand-emerald)]/10 border border-[var(--color-brand-emerald)]/20 p-8 sm:p-12 shadow-xl animate-fade-up delay-400 relative overflow-hidden">
+          <div className="absolute -top-24 -right-24 w-64 h-64 bg-[var(--color-brand-emerald)]/20 rounded-full blur-3xl pointer-events-none"></div>
+          <h2 className="text-2xl sm:text-3xl font-bold text-white mb-4 relative z-10 flex items-center gap-3">
+            <svg className="w-8 h-8 text-[var(--color-brand-emerald)]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+            สรุปเชิงระบบ
+          </h2>
+          <p className="text-[var(--color-text-secondary)] text-lg leading-relaxed relative z-10 max-w-5xl">
             ผลการวิเคราะห์จากบทที่ 3 ชี้ให้เห็นว่าการผสานข้อมูล DSM + Building Footprints + GTI ภายใต้กระบวนการ GIS
             ช่วยระบุหลังคาที่เหมาะสมได้อย่างเป็นรูปธรรม และสามารถแปลงผลลัพธ์เชิงวิศวกรรมให้เป็นข้อมูลเชิงพื้นที่ในรูปแบบ
-            GeoJSON เพื่อแสดงผลบนเว็บแมพได้โดยตรง สนับสนุนการตัดสินใจด้านพลังงานทดแทนในระดับอาคารอย่างแม่นยำและตรวจสอบย้อนกลับได้
+            <code className="mx-2 px-2 py-1 bg-white/10 rounded-md font-mono text-sm border border-white/10">GeoJSON</code>
+            เพื่อแสดงผลบนเว็บแมพได้โดยตรง สนับสนุนการตัดสินใจด้านพลังงานทดแทนในระดับอาคารอย่างแม่นยำและตรวจสอบย้อนกลับได้
           </p>
         </section>
       </main>
