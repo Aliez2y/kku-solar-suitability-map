@@ -128,8 +128,8 @@ function Stats() {
                     </svg>
                   </div>
                   <h3 className="text-sm font-medium text-[var(--color-text-secondary)] mb-2">จำนวนหลังคาอาคารรวม</h3>
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-4xl sm:text-5xl font-extrabold text-white font-outfit tracking-tight">
+                  <div className="flex items-baseline gap-2 flex-wrap">
+                    <span className="text-3xl sm:text-4xl lg:text-2xl xl:text-3xl 2xl:text-4xl font-extrabold text-white font-outfit tracking-tight leading-none">
                       <CountUp end={stats.totalBuildings} />
                     </span>
                     <span className="text-sm font-medium text-[var(--color-text-secondary)] opacity-80">หลัง</span>
@@ -147,8 +147,8 @@ function Stats() {
                     </svg>
                   </div>
                   <h3 className="text-sm font-medium text-[var(--color-text-secondary)] mb-2">พื้นที่หลังคารวม (ที่เหมาะสม)</h3>
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-4xl sm:text-5xl font-extrabold text-white font-outfit tracking-tight">
+                  <div className="flex items-baseline gap-2 flex-wrap">
+                    <span className="text-3xl sm:text-4xl lg:text-2xl xl:text-3xl 2xl:text-4xl font-extrabold text-white font-outfit tracking-tight leading-none">
                       <CountUp end={stats.totalArea} />
                     </span>
                     <span className="text-sm font-medium text-[var(--color-text-secondary)] opacity-80">ตร.ม.</span>
@@ -166,8 +166,8 @@ function Stats() {
                     </svg>
                   </div>
                   <h3 className="text-sm font-medium text-[var(--color-text-secondary)] mb-2">ศักยภาพการผลิตไฟฟ้ารวม</h3>
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-4xl sm:text-5xl font-extrabold text-white font-outfit tracking-tight">
+                  <div className="flex items-baseline gap-2 flex-wrap">
+                    <span className="text-3xl sm:text-4xl lg:text-2xl xl:text-3xl 2xl:text-4xl font-extrabold text-white font-outfit tracking-tight leading-none">
                       <CountUp end={stats.totalProduction} />
                     </span>
                     <span className="text-sm font-medium text-[var(--color-text-secondary)] opacity-80">MWh/yr</span>
@@ -185,8 +185,8 @@ function Stats() {
                     </svg>
                   </div>
                   <h3 className="text-sm font-medium text-[var(--color-text-secondary)] mb-2">มูลค่าไฟฟ้าที่ประหยัดได้รวม</h3>
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-4xl sm:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-400 font-outfit tracking-tight">
+                  <div className="flex items-baseline gap-2 flex-wrap">
+                    <span className="text-3xl sm:text-4xl lg:text-2xl xl:text-3xl 2xl:text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-400 font-outfit tracking-tight leading-none">
                       <CountUp end={stats.totalSavings} />
                     </span>
                     <span className="text-sm font-medium text-[var(--color-text-secondary)] opacity-80">บาท/ปี</span>
