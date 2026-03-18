@@ -40,7 +40,7 @@ function Stats() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('/SolarNKK_Bjson.geojson')
+    fetch('/BuildingNKK_SR.geojson')
       .then((res) => res.json())
       .then((data) => {
         if (!data || !data.features) return;
