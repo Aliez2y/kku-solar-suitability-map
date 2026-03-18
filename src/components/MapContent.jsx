@@ -158,7 +158,7 @@ const MapContent = () => {
             setGeoDataError('');
 
             try {
-                const response = await fetch('/SolarNKK_Bjson.geojson', { signal: controller.signal });
+                const response = await fetch('/BuildingNKK_SR.geojson', { signal: controller.signal });
                 if (!response.ok) {
                     throw new Error(`โหลดข้อมูลไม่สำเร็จ (${response.status})`);
                 }
@@ -310,7 +310,7 @@ const MapContent = () => {
                             </div>
                             <div className="flex items-baseline justify-between py-3 border-b border-white/5">
                                 <span className="text-xs text-[var(--color-text-secondary)]">รังสีดวงอาทิตย์</span>
-                                <span className="text-sm font-semibold text-amber-300 tabular-nums">
+                                <span className="text-sm font-semibold text-[var(--color-text-primary)] tabular-nums">
                                     {formatValue(getUsableSRValue(selected.properties), 2)}
                                     <span className="text-xs font-normal text-[var(--color-text-secondary)] ml-1">MWh/yr</span>
                                 </span>
@@ -334,7 +334,7 @@ const MapContent = () => {
                         {/* Footer */}
                         <div className="px-4 py-2.5 border-t border-white/5 flex-shrink-0">
                             <p className="text-[10px] text-[var(--color-text-secondary)] leading-relaxed">
-                                *ประเมินจากผู้ใช้ไฟประเภทที่ 1 (บ้านอยู่อาศัย) ผลิตเองทั้งหมด
+                                *ประเมินจากการสมมติว่าอาคารทุกหลังเป็นประเภทที่ 1 (บ้านอยู่อาศัย) และผลิตเองทั้งหมด
                             </p>
                         </div>
                     </div>
@@ -356,12 +356,12 @@ const MapContent = () => {
                         <button
                             onClick={() => switchLegendMode('suitability')}
                             aria-pressed={legendMode === 'suitability'}
-                            className={`flex-1 py-2.5 px-3 text-sm font-semibold tracking-wide transition-colors border-l border-white/8 ${legendMode === 'suitability'
+                            className={`flex-1 py-2.5 px-2 text-sm font-semibold tracking-wide transition-colors border-l border-white/8 ${legendMode === 'suitability'
                                 ? 'text-white bg-white/8'
                                 : 'text-[var(--color-text-secondary)] hover:text-white hover:bg-white/5'
                                 }`}
                         >
-                            ⚡ เหมาะสม
+                            ⚡ การผลิตไฟฟ้า
                         </button>
                     </div>
 
@@ -389,9 +389,9 @@ const MapContent = () => {
                         ) : (
                             <>
                                 {[
-                                    { cat: 'high', color: '#10B981', label: 'เหมาะสมมาก', range: '> 29' },
-                                    { cat: 'medium', color: '#F59E0B', label: 'เหมาะสมปานกลาง', range: '10–29' },
-                                    { cat: 'low', color: '#EF4444', label: 'เหมาะสมน้อย', range: '≤ 10' },
+                                    { cat: 'high', color: '#10B981', label: 'ผลิตไฟฟ้าได้มาก', range: '> 29' },
+                                    { cat: 'medium', color: '#F59E0B', label: 'ผลิตไฟฟ้าได้ปานกลาง', range: '10–29' },
+                                    { cat: 'low', color: '#EF4444', label: 'ผลิตไฟฟ้าได้น้อย', range: '≤ 10' },
                                 ].map(({ cat, color, label, range }) => (
                                     <button
                                         key={cat}
@@ -434,8 +434,8 @@ const MapContent = () => {
                 <MapContainer
                     ref={mapRef}
                     style={{ width: '100%', height: '100vh' }}
-                    center={[16.476025, 102.824633]}
-                    zoom={18}
+                    center={[16.436024, 102.835143]}
+                    zoom={15}
                     scrollWheelZoom={true}
                     zoomControl={false}
                 >
@@ -461,7 +461,24 @@ const MapContent = () => {
                             />
                         </LayersControl.BaseLayer>
 
-                        {/* To add local TileLayers back, host them externally first as they exceed GitHub repo size limits. */}
+                        {/* Optional Overlays */}
+                        <LayersControl.Overlay name="รังสีดวงอาทิตย์">
+                            <TileLayer
+                                url="https://pub-0920b952247f49948396bee2dfb62c09.r2.dev/SolarRaKKN_Tile/{z}/{x}/{y}.png"
+                                maxNativeZoom={16}
+                                maxZoom={20}
+                                opacity={0.8}
+                            />
+                        </LayersControl.Overlay>
+
+                        <LayersControl.Overlay name="รังสีดวงอาทิตย์ (มีเงื่อนไข)">
+                            <TileLayer
+                                url="https://pub-0920b952247f49948396bee2dfb62c09.r2.dev/solaRaKKN_CON/{z}/{x}/{y}.png"
+                                maxNativeZoom={16}
+                                maxZoom={20}
+                                opacity={0.8}
+                            />
+                        </LayersControl.Overlay>
 
                         {/* GeoJSON Overlay */}
                         {geoData && (
