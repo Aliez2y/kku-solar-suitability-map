@@ -18,9 +18,9 @@ export default function About() {
             เกี่ยวกับโครงการ
           </h1>
 					<p className="mt-6 text-lg sm:text-xl text-[var(--color-text-secondary)] font-light leading-relaxed max-w-3xl mx-auto">
-            การพัฒนาเว็บแมพเพื่อประเมินความเหมาะสมด้านพลังงานแสงอาทิตย์ในมหาวิทยาลัยขอนแก่น 
+            การพัฒนาเว็พแมพสำหรับประเมินศักยภาพพลังงานแสงอาทิตย์บนหลังคา กรณีศึกษา เทศบาลนครขอนแก่น 
 						<br />
-            <span className="font-outfit italic bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-emerald-400">Development of a Web Map for Solar Energy Suitability Assessment in Khon Kaen University</span>
+            <span className="font-outfit italic bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-emerald-400">Development of a Web-Based Map for Rooftop Solar Energy Potential Assessment:<br/> A Case Study of Khon Kaen Municipality</span>
           </p>
 				</header>
 
@@ -45,7 +45,7 @@ export default function About() {
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                       พื้นที่ศึกษา
                     </span>
-                    <span className="text-white font-medium text-lg ml-6">มหาวิทยาลัยขอนแก่น และชุมชนกังสดาล</span>
+                    <span className="text-white font-medium text-lg ml-6">เทศบาลนครขอนแก่น</span>
                   </span>
                 </div>
                 <div className="mt-4 bg-white/5 p-5 rounded-2xl border border-white/5">
@@ -53,18 +53,18 @@ export default function About() {
                     <svg className="w-5 h-5 text-[var(--color-brand-emerald)]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                     วัตถุประสงค์
                   </p>
-                  <ul className="space-y-3 text-sm">
+                  <ul className="space-y-3 text-lg">
                     <li className="flex items-start gap-3">
                       <div className="w-1.5 h-1.5 rounded-full bg-[var(--color-text-secondary)] mt-2 shrink-0"></div>
-                      <span>ศึกษาปัจจัยที่มีผลต่อความเหมาะสมของหลังคาอาคารสำหรับการติดตั้งเซลล์แสงอาทิตย์</span>
+                      <span className='text-white'>ศึกษาปัจจัยที่มีผลต่อความเหมาะสมของหลังคาอาคารสำหรับการติดตั้งเซลล์แสงอาทิตย์</span>
                     </li>
                     <li className="flex items-start gap-3">
                       <div className="w-1.5 h-1.5 rounded-full bg-[var(--color-text-secondary)] mt-2 shrink-0"></div>
-                      <span>ประเมินและคัดเลือกพื้นที่ที่มีศักยภาพสูงสุด</span>
+                      <span className='text-white'>ประเมินและคัดเลือกพื้นที่ที่มีศักยภาพสูงสุด</span>
                     </li>
                     <li className="flex items-start gap-3">
-                      <div className="w-1.5 h-1.5 rounded-full bg-[var(--color-brand-emerald)] mt-2 shrink-0 shadow-[0_0_8px_var(--color-brand-emerald)]"></div>
-                      <span className="text-white font-medium">พัฒนาเว็บแมพโต้ตอบเพื่อสนับสนุนการตัดสินใจ</span>
+                      <div className="w-1.5 h-1.5 rounded-full bg-[var(--color-text-secondary)] mt-2 shrink-0"></div>
+                  <span className='text-white'>พัฒนาเว็บแมพโต้ตอบเพื่อสนับสนุนการตัดสินใจ</span>
                     </li>
                   </ul>
                 </div>

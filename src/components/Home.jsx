@@ -128,7 +128,7 @@ function Home() {
       <footer id="about" className="relative z-10 border-t border-white/5 bg-[var(--color-bg-base)] py-10 text-center text-sm text-[var(--color-text-secondary)]">
         <div className="max-w-7xl mx-auto flex flex-col items-center justify-center gap-4">
           <div className="flex items-center gap-2 opacity-60">
-            <span className="font-outfit font-bold tracking-wide">SolarSuit-KKU</span>
+            <span className="font-outfit font-bold tracking-wide">SolarSuit-KKN</span>
             <span>© 2026</span>
           </div>
           <p className="opacity-50 text-xs">ระบบประเมินศักยภาพพลังงานแสงอาทิตย์บนหลังคาอาคาร เทศบาลนครขอนแก่น</p>

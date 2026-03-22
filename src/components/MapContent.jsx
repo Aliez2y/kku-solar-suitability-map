@@ -30,6 +30,11 @@ const SELECTED_LAYER_STYLE = {
     interactive: true
 };
 
+const MAP_DATA_URL_CANDIDATES = [
+    '/GeoJSON_SolarKKN/BuildingSR_NKK.geojson',
+    '/BuildingNKK_SR.geojson'
+];
+
 const toNumber = (value) => {
     const parsed = Number(value);
     return Number.isFinite(parsed) ? parsed : 0;
@@ -98,6 +103,38 @@ const getBaseFeatureStyle = (legendMode, properties) => {
     };
 };
 
+const fetchGeoJsonFromCandidates = async (urlCandidates, signal) => {
+    let lastError = null;
+
+    for (const url of urlCandidates) {
+        if (signal?.aborted) {
+            throw new DOMException('The operation was aborted.', 'AbortError');
+        }
+
+        try {
+            const response = await fetch(url, { signal });
+            if (!response.ok) {
+                lastError = new Error(`โหลดข้อมูลไม่สำเร็จ (${response.status}) จาก ${url}`);
+                continue;
+            }
+
+            const contentType = (response.headers.get('content-type') || '').toLowerCase();
+            if (!contentType.includes('json')) {
+                lastError = new Error(`รูปแบบข้อมูลไม่ถูกต้องจาก ${url} (content-type: ${contentType || 'unknown'})`);
+                continue;
+            }
+
+            const data = await response.json();
+            return data;
+        } catch (error) {
+            if (error.name === 'AbortError') throw error;
+            lastError = error;
+        }
+    }
+
+    throw lastError || new Error('ไม่พบไฟล์ข้อมูล GeoJSON ที่ใช้งานได้');
+};
+
 
 const MapContent = () => {
     const [geoData, setGeoData] = useState(null);
@@ -158,11 +195,7 @@ const MapContent = () => {
             setGeoDataError('');
 
             try {
-                const response = await fetch('/BuildingNKK_SR.geojson', { signal: controller.signal });
-                if (!response.ok) {
-                    throw new Error(`โหลดข้อมูลไม่สำเร็จ (${response.status})`);
-                }
-                const data = await response.json();
+                const data = await fetchGeoJsonFromCandidates(MAP_DATA_URL_CANDIDATES, controller.signal);
                 setGeoData(data);
             } catch (error) {
                 if (error.name === 'AbortError') return;
@@ -285,8 +318,8 @@ const MapContent = () => {
                         <div className="flex items-center justify-between px-4 py-3 border-b border-white/8 flex-shrink-0">
                             <div className="flex items-center gap-2.5 min-w-0">
                                 <span className="w-2 h-2 rounded-full bg-[var(--color-brand-emerald)] flex-shrink-0"></span>
-                                <span className="text-sm font-semibold text-[var(--color-text-primary)]">อาคาร</span>
-                                <span className="text-sm text-[var(--color-text-secondary)] font-mono truncate">#{selected.properties.B_ID ?? '—'}</span>
+                                <span className="text-lg font-semibold text-[var(--color-text-primary)]">อาคาร</span>
+                                <span className="text-lg text-[var(--color-text-secondary)] font-mono truncate">#{selected.properties.B_ID ?? '—'}</span>
                             </div>
                             <button
                                 onClick={handleClosePanel}
@@ -302,38 +335,38 @@ const MapContent = () => {
                         {/* Metrics */}
                         <div className="overflow-y-auto flex-1 px-4 py-1">
                             <div className="flex items-baseline justify-between py-3 border-b border-white/5">
-                                <span className="text-xs text-[var(--color-text-secondary)]">พื้นที่หลังคา</span>
+                                <span className="text-sm text-[var(--color-text-secondary)]">พื้นที่หลังคา</span>
                                 <span className="text-sm font-semibold text-[var(--color-text-primary)] tabular-nums">
                                     {formatValue(getAreaValue(selected.properties), 2)}
-                                    <span className="text-xs font-normal text-[var(--color-text-secondary)] ml-1">ตร.ม.</span>
+                                    <span className="text-sm font-normal text-[var(--color-text-secondary)] ml-1">ตร.ม.</span>
                                 </span>
                             </div>
                             <div className="flex items-baseline justify-between py-3 border-b border-white/5">
-                                <span className="text-xs text-[var(--color-text-secondary)]">รังสีดวงอาทิตย์</span>
+                                <span className="text-sm text-[var(--color-text-secondary)]">รังสีดวงอาทิตย์</span>
                                 <span className="text-sm font-semibold text-[var(--color-text-primary)] tabular-nums">
                                     {formatValue(getUsableSRValue(selected.properties), 2)}
-                                    <span className="text-xs font-normal text-[var(--color-text-secondary)] ml-1">MWh/yr</span>
+                                    <span className="text-sm font-normal text-[var(--color-text-secondary)] ml-1">MWh/yr</span>
                                 </span>
                             </div>
                             <div className="flex items-baseline justify-between py-3 border-b border-white/5">
-                                <span className="text-xs text-[var(--color-text-secondary)]">ศักยภาพผลิตไฟฟ้า</span>
+                                <span className="text-sm text-[var(--color-text-secondary)]">ศักยภาพผลิตไฟฟ้า</span>
                                 <span className="text-sm font-semibold text-[var(--color-text-primary)] tabular-nums">
                                     {formatValue(getElecProdValue(selected.properties), 2)}
-                                    <span className="text-xs font-normal text-[var(--color-text-secondary)] ml-1">MWh/yr</span>
+                                    <span className="text-sm font-normal text-[var(--color-text-secondary)] ml-1">MWh/yr</span>
                                 </span>
                             </div>
                             <div className="flex items-baseline justify-between py-3">
-                                <span className="text-xs text-[var(--color-text-secondary)]">มูลค่าประหยัดไฟ</span>
+                                <span className="text-sm text-[var(--color-text-secondary)]">มูลค่าประหยัดไฟ</span>
                                 <span className="text-sm font-bold text-[var(--color-brand-emerald)] tabular-nums">
                                     {formatValue(getElecCostValue(selected.properties), 0)}
-                                    <span className="text-xs font-normal text-[var(--color-text-secondary)] ml-1">บาท/ปี</span>
+                                    <span className="text-sm font-normal text-[var(--color-text-secondary)] ml-1">บาท/ปี</span>
                                 </span>
                             </div>
                         </div>
 
                         {/* Footer */}
                         <div className="px-4 py-2.5 border-t border-white/5 flex-shrink-0">
-                            <p className="text-[10px] text-[var(--color-text-secondary)] leading-relaxed">
+                            <p className="text-[12px] text-[var(--color-text-secondary)] leading-relaxed">
                                 *ประเมินจากการสมมติว่าอาคารทุกหลังเป็นประเภทที่ 1 (บ้านอยู่อาศัย) และผลิตเองทั้งหมด
                             </p>
                         </div>
@@ -464,18 +497,18 @@ const MapContent = () => {
                         {/* Optional Overlays */}
                         <LayersControl.Overlay name="รังสีดวงอาทิตย์">
                             <TileLayer
-                                url="https://pub-0920b952247f49948396bee2dfb62c09.r2.dev/SolarRaKKN_Tile/{z}/{x}/{y}.png"
+                                url="https://pub-0920b952247f49948396bee2dfb62c09.r2.dev/SolarraKKNGG_Tile/{z}/{x}/{y}.png"
                                 maxNativeZoom={16}
-                                maxZoom={20}
+                                maxZoom={18}
                                 opacity={0.8}
                             />
                         </LayersControl.Overlay>
 
                         <LayersControl.Overlay name="รังสีดวงอาทิตย์ (มีเงื่อนไข)">
                             <TileLayer
-                                url="https://pub-0920b952247f49948396bee2dfb62c09.r2.dev/solaRaKKN_CON/{z}/{x}/{y}.png"
+                                url="https://pub-0920b952247f49948396bee2dfb62c09.r2.dev/SolarraKKNGG_Con/{z}/{x}/{y}.png"
                                 maxNativeZoom={16}
-                                maxZoom={20}
+                                maxZoom={18}
                                 opacity={0.8}
                             />
                         </LayersControl.Overlay>

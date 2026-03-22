@@ -23,7 +23,7 @@ function Navbar() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
             </div>
-            <span className="font-outfit text-transparent bg-clip-text bg-gradient-to-r from-white to-slate-400">SolarSuit-KKU</span>
+            <span className="font-outfit text-transparent bg-clip-text bg-gradient-to-r from-white to-slate-400">SolarSuit-KKN</span>
           </Link>
 
           <div className="hidden md:flex items-center gap-2 text-sm text-[var(--color-text-secondary)]">

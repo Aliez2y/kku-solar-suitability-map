@@ -8,11 +8,11 @@ function Method() {
     },
     {
       title: 'Building Footprints',
-      detail: 'Vector .shp จาก Open Buildings Dataset, 11,527 polygons ใช้เป็นขอบเขตอาคารสำหรับวิเคราะห์รายหลังคา'
+      detail: 'Vector .shp จาก Open Buildings Dataset, 78,897 polygons ใช้เป็นขอบเขตอาคารสำหรับวิเคราะห์รายหลังคา'
     },
     {
       title: 'Global Tilted Irradiation (GTI)',
-      detail: 'Raster .tif จาก Global Solar Atlas, หน่วย kWh/m²/yr ใช้เป็นข้อมูลรังสีดวงอาทิตย์เฉลี่ยรายปี'
+      detail: 'Raster .tif จากการคำนวณด้วย ArcGIS Pro (Raster Solar Radiation), หน่วย kWh/m²/yr ใช้เป็นข้อมูลรังสีดวงอาทิตย์เฉลี่ยรายปี'
     }
   ];
 
@@ -31,7 +31,7 @@ function Method() {
     },
     {
       title: '4) สรุปเชิงสถิติรายอาคาร',
-      body: 'ใช้ Zonal Statistics as Table เพื่อคำนวณ COUNT, AREA และ MEAN ของรังสีดวงอาทิตย์ภายในขอบเขตอาคารแต่ละหลัง'
+      body: 'ใช้ Zonal Statistics as Table เพื่อคำนวณ AREA และ MEAN ของรังสีดวงอาทิตย์ภายในขอบเขตอาคารแต่ละหลัง'
     },
     {
       title: '5) ประเมินพลังงานที่รับและผลิตได้',
@@ -112,11 +112,11 @@ function Method() {
               </li>
               <li className="flex items-start gap-3">
                 <svg className="w-5 h-5 text-[var(--color-brand-amber)] mt-1 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                <span><strong>ทิศทางหลังคาที่เหมาะสม:</strong> ช่วง 67.5°–292.5° (ตะวันออก–ใต้–ตะวันตก)</span>
+                <span><strong>ทิศทางหลังคาที่เหมาะสม:</strong> ช่วง 22.5°–337.5° (ตะวันออก–ใต้–ตะวันตก)</span>
               </li>
               <li className="flex items-start gap-3">
                 <svg className="w-5 h-5 text-[var(--color-brand-amber)] mt-1 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                <span><strong>หลังคาแบน:</strong> ความชันต่ำกว่า 10° (Slope &lt; 10°) ถือว่ามีศักยภาพสูง เพราะปรับมุมติดตั้งได้ยืดหยุ่น</span>
+                <span><strong>หลังคาแบน:</strong> ความชันไม่เกิน 10° (Slope ≤ 10°) ถือว่ามีศักยภาพสูง เพราะปรับมุมติดตั้งได้ยืดหยุ่น</span>
               </li>
               <li className="flex items-start gap-3">
                 <svg className="w-5 h-5 text-[var(--color-brand-amber)] mt-1 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
@@ -153,7 +153,7 @@ function Method() {
             สรุปเชิงระบบ
           </h2>
           <p className="text-[var(--color-text-secondary)] text-lg leading-relaxed relative z-10 max-w-5xl">
-            ผลการวิเคราะห์จากบทที่ 3 ชี้ให้เห็นว่าการผสานข้อมูล DSM + Building Footprints + GTI ภายใต้กระบวนการ GIS
+            ผลการวิเคราะห์จากบทที่ 3 ชี้ให้เห็นว่าการผสานข้อมูล DSM + Building Footprints + รังสีดวงอาทิตย์ที่คำนวณด้วย ArcGIS Pro (Raster Solar Radiation) ภายใต้กระบวนการ GIS
             ช่วยระบุหลังคาที่เหมาะสมได้อย่างเป็นรูปธรรม และสามารถแปลงผลลัพธ์เชิงวิศวกรรมให้เป็นข้อมูลเชิงพื้นที่ในรูปแบบ
             <code className="mx-2 px-2 py-1 bg-white/10 rounded-md font-mono text-sm border border-white/10">GeoJSON</code>
             เพื่อแสดงผลบนเว็บแมพได้โดยตรง สนับสนุนการตัดสินใจด้านพลังงานทดแทนในระดับอาคารอย่างแม่นยำและตรวจสอบย้อนกลับได้
