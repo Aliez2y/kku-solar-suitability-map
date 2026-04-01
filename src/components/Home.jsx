@@ -131,7 +131,7 @@ function Home() {
             <span className="font-outfit font-bold tracking-wide">SolarSuit-KKN</span>
             <span>© 2026</span>
           </div>
-          <p className="opacity-50 text-xs">ระบบประเมินศักยภาพพลังงานแสงอาทิตย์บนหลังคาอาคาร เทศบาลนครขอนแก่น</p>
+          <p className="opacity-50 text-xs">ระบบแสดงศักยภาพพลังงานแสงอาทิตย์บนหลังคาอาคาร เทศบาลนครขอนแก่น</p>
         </div>
       </footer>
     </div>

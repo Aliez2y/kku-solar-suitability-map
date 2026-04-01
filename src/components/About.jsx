@@ -18,9 +18,9 @@ export default function About() {
             เกี่ยวกับโครงการ
           </h1>
 					<p className="mt-6 text-lg sm:text-xl text-[var(--color-text-secondary)] font-light leading-relaxed max-w-3xl mx-auto">
-            การพัฒนาเว็พแมพสำหรับประเมินศักยภาพพลังงานแสงอาทิตย์บนหลังคา กรณีศึกษา เทศบาลนครขอนแก่น 
+            การพัฒนาเว็พแมพสำหรับแสดงศักยภาพพลังงานแสงอาทิตย์บนหลังคา กรณีศึกษา เทศบาลนครขอนแก่น 
 						<br />
-            <span className="font-outfit italic bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-emerald-400">Development of a Web-Based Map for Rooftop Solar Energy Potential Assessment:<br/> A Case Study of Khon Kaen Municipality</span>
+            <span className="font-outfit italic bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-emerald-400">Development of a Web Map for Visualizing Rooftop Solar Energy Potential:<br/> A Case Study of Khon Kaen Municipality</span>
           </p>
 				</header>
 
@@ -37,7 +37,7 @@ export default function About() {
               </h2>
               <div className="leading-relaxed text-[var(--color-text-secondary)] space-y-6 flex-grow relative z-10">
                 <p className="text-lg">
-                  การพัฒนาเว็บแมพสำหรับการประเมินความเหมาะสมของพื้นที่หลังคาอาคารในการติดตั้งแผงโซลาร์เซลล์ โดยใช้เทคโนโลยีสารสนเทศภูมิศาสตร์ (GIS) และข้อมูลเชิงพื้นที่
+                  การพัฒนาเว็บแมพสำหรับการแสดงความเหมาะสมของพื้นที่หลังคาอาคารในการติดตั้งแผงโซลาร์เซลล์ โดยใช้เทคโนโลยีสารสนเทศภูมิศาสตร์ (GIS) และข้อมูลเชิงพื้นที่
                 </p>
                 <div className="p-5 bg-[var(--color-surface-2)]/80 rounded-2xl border border-white/5 inline-block text-white shadow-inner">
                   <span className="text-[var(--color-brand-emerald)] font-semibold flex flex-col gap-1">
