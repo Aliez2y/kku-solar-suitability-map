@@ -497,18 +497,18 @@ const MapContent = () => {
                         {/* Optional Overlays */}
                         <LayersControl.Overlay name="รังสีดวงอาทิตย์">
                             <TileLayer
-                                url="https://pub-0920b952247f49948396bee2dfb62c09.r2.dev/SolarraKKNGG_Tile/{z}/{x}/{y}.png"
+                                url="/TilePNG/SolarraKKNGG_Tile/{z}/{x}/{y}.png"
                                 maxNativeZoom={16}
-                                maxZoom={18}
+                                maxZoom={20}
                                 opacity={0.8}
                             />
                         </LayersControl.Overlay>
 
                         <LayersControl.Overlay name="รังสีดวงอาทิตย์ (มีเงื่อนไข)">
                             <TileLayer
-                                url="https://pub-0920b952247f49948396bee2dfb62c09.r2.dev/SolarraKKNGG_Con/{z}/{x}/{y}.png"
+                                url="/TilePNG/SolarraKKNGG_Con/{z}/{x}/{y}.png"
                                 maxNativeZoom={16}
-                                maxZoom={18}
+                                maxZoom={20}
                                 opacity={0.8}
                             />
                         </LayersControl.Overlay>

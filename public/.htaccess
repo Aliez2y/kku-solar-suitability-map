@@ -1,0 +1,12 @@
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+  
+  # Rule 1: If the requested resource is a valid file, directory or symlink, serve it directly
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteCond %{REQUEST_FILENAME} !-l
+  
+  # Rule 2: Otherwise, redirect all requests to index.html (SPA routing)
+  RewriteRule ^.*$ /index.html [L]
+</IfModule>

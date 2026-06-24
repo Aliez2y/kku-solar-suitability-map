@@ -26,7 +26,12 @@ dist-ssr
 # Large map tiles and bundles
 public/tiles/
 public/tile_layer/
+public/TilePNG/
 *.bundle
 
 # Ignore specific text file
 rep_z05_text.txt
+
+# Large GeoJSON datasets
+public/BuildingNKK_SR.geojson
+public/GeoJSON_SoalrKKN/

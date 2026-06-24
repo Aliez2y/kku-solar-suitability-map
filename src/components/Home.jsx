@@ -36,7 +36,7 @@ function Home() {
       )
     },
     {
-      title: 'ประเมินความเหมาะสม',
+      title: 'แสดงความเหมาะสม',
       description: 'จัดระดับความเหมาะสมของอาคารเพื่อการตัดสินใจที่แม่นยำ',
       delay: 'delay-400',
       icon: (
@@ -67,7 +67,7 @@ function Home() {
         <section id="home" className="relative min-h-[75vh] flex items-center justify-center px-4 sm:px-6 lg:px-8">
           <div className="max-w-5xl text-center space-y-8">
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold leading-[1.2] text-white tracking-tight animate-fade-up">
-              ระบบประเมินศักยภาพพลังงานแสงอาทิตย์บนหลังคาอาคาร
+              ระบบแสดงศักยภาพพลังงานแสงอาทิตย์บนหลังคาอาคาร
               <span className="block mt-3 text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-blue-400 to-indigo-400 animate-fade-up delay-100 font-outfit font-bold">Khon Kaen Solar Map</span>
             </h1>
 
